@@ -1,1 +1,0 @@
-#define __O_CLOEXEC 02000000
