@@ -13,6 +13,7 @@ dependencies = [
 
 sources = [
   'main.c',
+  'input/event_handler.c',
 ]
 
 exe = executable(
