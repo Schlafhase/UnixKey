@@ -133,7 +133,8 @@ private:
       char out[FCITX_UTF8_MAX_LENGTH + 1];
       char *outbuf = out;
       iconv(engine_->conv(), &inbuf, &insize, &outbuf, &avail);
-      ;
+      *outbuf = '\0';
+      candidates_[i] = std::make_unique<QuweiCandidateWord>(engine_, out);
     }
   }
 
@@ -263,6 +264,12 @@ void QuweiState::updateUI() {
     fcitx::Text preedit(buffer_.userInput(), fcitx::TextFormatFlag::HighLight);
     inputPanel.setClientPreedit(preedit);
   }
+  else {
+    fcitx::Text preedit(buffer_.userInput(), fcitx::TextFormatFlag::HighLight);
+    inputPanel.setPreedit(preedit);
+  }
+  ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
+  ic_->updatePreedit();
 }
 
 UnixKeyEngine::UnixKeyEngine(fcitx::Instance *instance)
@@ -302,7 +309,8 @@ void UnixKeyEngine::keyEvent(const fcitx::InputMethodEntry &entry,
   state->keyEvent(keyEvent);
 }
 
-void UnixKeyEngine::reset(const fcitx::InputMethodEntry &, fcitx::InputContextEvent &event) {
+void UnixKeyEngine::reset(const fcitx::InputMethodEntry &,
+                          fcitx::InputContextEvent &event) {
   auto *state = event.inputContext()->propertyFor(&factory_);
   state->reset();
 }
