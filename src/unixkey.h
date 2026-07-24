@@ -15,13 +15,13 @@
 
 class UnixKeyEngine;
 
-class QuweiState : public fcitx::InputContextProperty {
+
+class UnixKeyState : public fcitx::InputContextProperty {
 public:
-  QuweiState(UnixKeyEngine *engine, fcitx::InputContext *ic)
+  UnixKeyState(UnixKeyEngine *engine, fcitx::InputContext *ic)
       : engine_(engine), ic_(ic) {}
 
   void keyEvent(fcitx::KeyEvent &keyEvent);
-  void setCode(int code);
   void updateUI();
   void reset() {
     buffer_.clear();
@@ -31,8 +31,7 @@ public:
 private:
   UnixKeyEngine *engine_;
   fcitx::InputContext *ic_;
-  fcitx::InputBuffer buffer_{{fcitx::InputBufferOption::AsciiOnly,
-                              fcitx::InputBufferOption::FixedCursor}};
+  fcitx::InputBuffer buffer_{};
 };
 
 class UnixKeyEngine : public fcitx::InputMethodEngineV2 {
@@ -59,7 +58,7 @@ private:
   FCITX_ADDON_DEPENDENCY_LOADER(fullwidth, instance_->addonManager());
 
   fcitx::Instance *instance_;
-  fcitx::FactoryFor<QuweiState> factory_;
+  fcitx::FactoryFor<UnixKeyState> factory_;
   iconv_t conv_;
 };
 
