@@ -2,6 +2,7 @@
 #include "fcitx-utils/keysym.h"
 #include <Fcitx5/Module/fcitx-module/punctuation/punctuation_public.h>
 #include <Fcitx5/Module/fcitx-module/quickphrase/quickphrase_public.h>
+#include <cstddef>
 #include <fcitx-utils/capabilityflags.h>
 #include <fcitx-utils/cutf8.h>
 #include <fcitx-utils/key.h>
@@ -23,7 +24,36 @@
 #include <iconv.h>
 #include <stdexcept>
 #include <string>
+#include <unicode/brkiter.h>
+#include <unicode/unistr.h>
+#include <unicode/utypes.h>
 #include <unistd.h>
+#include <vector>
+
+size_t count_grapheme_clusters(const std::string &utf8_input) {
+  UErrorCode status = U_ZERO_ERROR;
+
+  icu::UnicodeString text = icu::UnicodeString::fromUTF8(utf8_input);
+  std::unique_ptr<icu::BreakIterator> bi(
+      icu::BreakIterator::createCharacterInstance(icu::Locale::getDefault(),
+                                                  status));
+
+  if (U_FAILURE(status)) {
+    FCITX_INFO() << "Failed to create BreakIterator: " << u_errorName(status)
+                 << "\n";
+    return 0;
+  }
+
+  bi->setText(text);
+
+  size_t count = 0;
+  for (int32_t end = bi->next(); end != icu::BreakIterator::DONE;
+       end = bi->next()) {
+    count++;
+  }
+
+  return count;
+}
 
 std::string codepointToUtf8(uint32_t cp) {
   std::string out;
@@ -58,38 +88,85 @@ std::string replaceAll(std::string str, const std::string &from,
 }
 
 void UnixKeyState::updateUI() {
+  auto &inputPanel = ic_->inputPanel();
+  inputPanel.reset();
+  if (ic_->capabilityFlags().test(fcitx::CapabilityFlag::Preedit)) {
+    fcitx::Text preedit(buffer_.userInput(), fcitx::TextFormatFlag::Italic);
+    inputPanel.setClientPreedit(preedit);
+  } else {
+    fcitx::Text preedit(buffer_.userInput());
+    inputPanel.setPreedit(preedit);
+  }
   ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
+  ic_->updatePreedit();
 }
+
+std::vector<replacement *> replacements = {
+    new replacement{"oe", "ö"}, new replacement{"ae", "ä"},
+    new replacement{"ss", "ß"}, new replacement{"ue", "ü"}};
 
 void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
   if (keyEvent.isRelease()) {
     return keyEvent.filterAndAccept();
   }
+
   if (keyEvent.key().check(FcitxKey_space)) {
-    FCITX_INFO() << "space pressed buffer_:" << buffer_.userInput();
-    if (ic_->capabilityFlags().test(fcitx::CapabilityFlag::SurroundingText)) {
-      FCITX_INFO() << "capability present";
-      ic_->deleteSurroundingText(0, 5);
-    }
-    ic_->commitString(replaceAll(buffer_.userInput(), "oe", "ö"));
+    ic_->commitString(buffer_.userInput());
     ic_->commitString(" ");
     reset();
     return keyEvent.filterAndAccept();
   }
 
   if (keyEvent.key().check(FcitxKey_BackSpace)) {
-    buffer_.backspace();
-    // ic_->keyEvent(keyEvent);
-    ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
-    // ic_->forwardKey(fcitx::Key::fromKeyCode(FcitxKey_BackSpace), 1);
-    return keyEvent.accept();
+    if (!buffer_.empty()) {
+      buffer_.backspace();
+      updateUI();
+      return keyEvent.filterAndAccept();
+    } else {
+      ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
+      updateUI();
+      return keyEvent.accept();
+    }
   }
 
-  FCITX_INFO() << "other key pressed: " << keyEvent.key().toString();
+  if (keyEvent.key().check(FcitxKey_backslash)) {
+    if (lastReplacement_ != NULL) {
+      for (size_t i = 0; i < count_grapheme_clusters(lastReplacement_->to);
+           i++) {
+        buffer_.backspace();
+      }
+      buffer_.type(lastReplacement_->from);
+      lastReplacement_ = NULL;
+      updateUI();
+      return keyEvent.filterAndAccept();
+    }
+  }
 
   int unicode = fcitx::Key::keySymToUnicode(keyEvent.key().sym());
   buffer_.type(unicode);
-  ic_->commitString(codepointToUtf8(unicode));
+  for (size_t ri = 0; ri < replacements.size(); ri++) {
+    replacement *r = replacements[ri];
+    for (size_t i = 0; i < r->from.size(); i++) {
+      if (buffer_.userInput().size() < r->from.size()) {
+        goto continue_;
+      }
+      char userInputChar =
+          buffer_.userInput()[buffer_.userInput().size() - i - 1];
+      char fromChar = r->from[r->from.size() - 1 - i];
+
+      if (userInputChar != fromChar) {
+        goto continue_;
+      }
+    }
+    lastReplacement_ = r;
+    for (size_t i = 0; i < r->from.size(); i++) {
+      buffer_.backspace();
+    }
+    buffer_.type(r->to);
+  continue_:
+    continue;
+  }
+
   updateUI();
   return keyEvent.filterAndAccept();
 }

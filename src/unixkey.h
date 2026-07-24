@@ -1,6 +1,7 @@
 #ifndef _FCITX5_UNIXKEY_H_
 #define _FCITX5_UNIXKEY_H_
 
+#include <cstddef>
 #include <fcitx-utils/inputbuffer.h>
 #include <fcitx/addonfactory.h>
 #include <fcitx/addoninstance.h>
@@ -15,6 +16,10 @@
 
 class UnixKeyEngine;
 
+struct replacement {
+  std::string from;
+  std::string to;
+};
 
 class UnixKeyState : public fcitx::InputContextProperty {
 public:
@@ -25,6 +30,7 @@ public:
   void updateUI();
   void reset() {
     buffer_.clear();
+    lastReplacement_ = NULL;
     updateUI();
   }
 
@@ -32,6 +38,7 @@ private:
   UnixKeyEngine *engine_;
   fcitx::InputContext *ic_;
   fcitx::InputBuffer buffer_{};
+  replacement *lastReplacement_ = NULL;
 };
 
 class UnixKeyEngine : public fcitx::InputMethodEngineV2 {
