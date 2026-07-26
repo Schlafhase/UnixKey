@@ -1,10 +1,15 @@
 #include "unixkey.h"
-#include "fcitx-utils/keysym.h"
+#include "unixkeystate.h"
 #include <Fcitx5/Module/fcitx-module/punctuation/punctuation_public.h>
 #include <Fcitx5/Module/fcitx-module/quickphrase/quickphrase_public.h>
 #include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
 #include <fcitx-utils/capabilityflags.h>
 #include <fcitx-utils/cutf8.h>
+#include <fcitx-utils/event.h>
+#include <fcitx-utils/eventloopinterface.h>
 #include <fcitx-utils/key.h>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/macros.h>
@@ -21,13 +26,16 @@
 #include <fcitx/text.h>
 #include <fcitx/userinterface.h>
 #include <fcitx/userinterfacemanager.h>
+#include <fstream>
 #include <iconv.h>
+#include <nlohmann/json_fwd.hpp>
 #include <stdexcept>
 #include <string>
 #include <unicode/brkiter.h>
 #include <unicode/unistr.h>
 #include <unicode/utypes.h>
 #include <unistd.h>
+#include <unordered_map>
 #include <vector>
 
 size_t count_grapheme_clusters(const std::string &utf8_input) {
@@ -75,111 +83,33 @@ std::string codepointToUtf8(uint32_t cp) {
   return out;
 }
 
-std::string replaceAll(std::string str, const std::string &from,
-                       const std::string &to) {
-  if (from.empty())
-    return str;
-  size_t pos = 0;
-  while ((pos = str.find(from, pos)) != std::string::npos) {
-    str.replace(pos, from.length(), to);
-    pos += to.length();
-  }
-  return str;
-}
-
-void UnixKeyState::updateUI() {
-  auto &inputPanel = ic_->inputPanel();
-  inputPanel.reset();
-  if (ic_->capabilityFlags().test(fcitx::CapabilityFlag::Preedit)) {
-    fcitx::Text preedit(buffer_.userInput(), fcitx::TextFormatFlag::Italic);
-    inputPanel.setClientPreedit(preedit);
-  } else {
-    fcitx::Text preedit(buffer_.userInput());
-    inputPanel.setPreedit(preedit);
-  }
-  ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
-  ic_->updatePreedit();
-}
-
-std::vector<replacement *> replacements = {
-    new replacement{"oe", "ö"}, new replacement{"ae", "ä"},
-    new replacement{"ss", "ß"}, new replacement{"ue", "ü"}};
-
-void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
-  if (keyEvent.isRelease()) {
-    return keyEvent.filterAndAccept();
-  }
-
-  if (keyEvent.key().check(FcitxKey_space)) {
-    ic_->commitString(buffer_.userInput());
-    ic_->commitString(" ");
-    reset();
-    return keyEvent.filterAndAccept();
-  }
-
-  if (keyEvent.key().check(FcitxKey_BackSpace)) {
-    if (!buffer_.empty()) {
-      buffer_.backspace();
-      updateUI();
-      return keyEvent.filterAndAccept();
-    } else {
-      ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
-      updateUI();
-      return keyEvent.accept();
-    }
-  }
-
-  if (keyEvent.key().check(FcitxKey_backslash)) {
-    if (lastReplacement_ != NULL) {
-      for (size_t i = 0; i < count_grapheme_clusters(lastReplacement_->to);
-           i++) {
-        buffer_.backspace();
-      }
-      buffer_.type(lastReplacement_->from);
-      lastReplacement_ = NULL;
-      updateUI();
-      return keyEvent.filterAndAccept();
-    }
-  }
-
-  int unicode = fcitx::Key::keySymToUnicode(keyEvent.key().sym());
-  buffer_.type(unicode);
-  for (size_t ri = 0; ri < replacements.size(); ri++) {
-    replacement *r = replacements[ri];
-    for (size_t i = 0; i < r->from.size(); i++) {
-      if (buffer_.userInput().size() < r->from.size()) {
-        goto continue_;
-      }
-      char userInputChar =
-          buffer_.userInput()[buffer_.userInput().size() - i - 1];
-      char fromChar = r->from[r->from.size() - 1 - i];
-
-      if (userInputChar != fromChar) {
-        goto continue_;
-      }
-    }
-    lastReplacement_ = r;
-    for (size_t i = 0; i < r->from.size(); i++) {
-      buffer_.backspace();
-    }
-    buffer_.type(r->to);
-  continue_:
-    continue;
-  }
-
-  updateUI();
-  return keyEvent.filterAndAccept();
-}
-
 UnixKeyEngine::UnixKeyEngine(fcitx::Instance *instance)
     : instance_(instance), factory_([this](fcitx::InputContext &ic) {
-        return new UnixKeyState(this, &ic);
+        // read replacements from json
+        std::ifstream fin("/home/Linus/.config/unixkey.json");
+        nlohmann::json obj;
+        try {
+          fin >> obj;
+        } catch (const nlohmann::json::parse_error &e) {
+          FCITX_ERROR() << "Either the config file at ~/.config/unixkey.json "
+                           "doesn't exist or it's invalid."
+                        << e.what();
+          exit(1);
+        }
+        std::unordered_map<std::string, std::string> map =
+            obj.get<std::unordered_map<std::string, std::string>>();
+
+        std::vector<replacement> result;
+        for (const auto &[key, value] : map) {
+          result.push_back({key, value});
+        }
+        return new UnixKeyState(this, &ic, result);
       }) {
   conv_ = iconv_open("UTF-8", "GB18030");
   if (conv_ == reinterpret_cast<iconv_t>(-1)) {
     throw std::runtime_error("Failed to create converter");
   }
-  instance->inputContextManager().registerProperty("quweiState", &factory_);
+  instance->inputContextManager().registerProperty("unixkeyState", &factory_);
 }
 
 void UnixKeyEngine::activate(const fcitx::InputMethodEntry &entry,
@@ -210,8 +140,8 @@ void UnixKeyEngine::keyEvent(const fcitx::InputMethodEntry &entry,
 
 void UnixKeyEngine::reset(const fcitx::InputMethodEntry &,
                           fcitx::InputContextEvent &event) {
-  auto *state = event.inputContext()->propertyFor(&factory_);
-  state->reset();
+  // auto *state = event.inputContext()->propertyFor(&factory_);
+  // state->reset();
 }
 
 FCITX_ADDON_FACTORY(UnixKeyEngineFactory)

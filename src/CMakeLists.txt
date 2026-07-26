@@ -1,5 +1,4 @@
-
-add_library(unixkey SHARED unixkey.cpp)
+add_library(unixkey SHARED unixkey.cpp unixkeystate.cpp)
 target_link_libraries(unixkey PRIVATE Fcitx5::Core)
 target_link_libraries(unixkey PRIVATE ICU::uc ICU::io)
 set_target_properties(unixkey PROPERTIES PREFIX "")
