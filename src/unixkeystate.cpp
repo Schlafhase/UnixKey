@@ -23,7 +23,6 @@
 #include <fcitx/text.h>
 #include <fcitx/userinterface.h>
 #include <fcitx/userinterfacemanager.h>
-#include <format>
 #include <iconv.h>
 #include <unicode/brkiter.h>
 #include <unicode/unistr.h>
