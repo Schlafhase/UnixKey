@@ -36,6 +36,7 @@
 #include <unicode/utypes.h>
 #include <unistd.h>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 size_t count_grapheme_clusters(const std::string &utf8_input) {
@@ -103,7 +104,7 @@ UnixKeyEngine::UnixKeyEngine(fcitx::Instance *instance)
         for (const auto &[key, value] : map) {
           result.push_back({key, value});
         }
-        return new UnixKeyState(this, &ic, result);
+        return new UnixKeyState(this, &ic, std::move(result));
       }) {
   conv_ = iconv_open("UTF-8", "GB18030");
   if (conv_ == reinterpret_cast<iconv_t>(-1)) {
