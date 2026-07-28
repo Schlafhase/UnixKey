@@ -40,8 +40,7 @@ void UnixKeyState::updateUI() {
 
 void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
   ic_->forwardKey(keyEvent.key());
-  if (keyEvent.isRelease() || keyEvent.key().states() ||
-      keyEvent.key().check(FcitxKey_space)) {
+  if (keyEvent.isRelease() || keyEvent.key().states()) {
     return keyEvent.filterAndAccept();
   }
 

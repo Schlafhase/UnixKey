@@ -5,3 +5,4 @@ set_target_properties(unixkey PROPERTIES PREFIX "")
 install(TARGETS unixkey DESTINATION "${FCITX_INSTALL_LIBDIR}/fcitx5")
 
 add_subdirectory(inputevents)
+add_subdirectory(test)

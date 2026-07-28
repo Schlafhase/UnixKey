@@ -18,15 +18,17 @@ public:
   // that for you except sorted is set to true. THE MATCHER WILL NOT WORK IF
   // THIS IS ABUSED.
   Matcher(std::vector<replacement> replacements, bool sorted = false);
-  // Appends currentMatch_ with additionalInput and updates the private fields
-  // correspondingly. If no match was found it returns an applyReplacement which
-  // contains necessary information to apply a substitution. Otherwise NULL is
-  // returned.
+  Matcher(std::string replacementFile);
+  // Appends currentMatch_ with additionalInput and updates the private
+  // fields correspondingly. If no match was found it returns an
+  // applyReplacement which contains necessary information to apply a
+  // substitution. Otherwise NULL is returned.
   std::optional<applyReplacement> updateMatch(std::string additionalInput);
 
+  std::string currentMatch_ = "";
+  replacement *currentReplacement_ = NULL;
+
 private:
-  std::string currentMatch_;
-  replacement *currentReplacement_;
   std::vector<replacement> replacements_;
 
   bool getLongestSubstitution(std::string string);
