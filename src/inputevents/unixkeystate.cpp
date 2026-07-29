@@ -1,8 +1,10 @@
 #include "unixkeystate.h"
 #include "fcitx-utils/keysym.h"
+#include "unixkey.h"
 #include <Fcitx5/Module/fcitx-module/punctuation/punctuation_public.h>
 #include <Fcitx5/Module/fcitx-module/quickphrase/quickphrase_public.h>
 #include <cstddef>
+#include <ctime>
 #include <fcitx-utils/capabilityflags.h>
 #include <fcitx-utils/cutf8.h>
 #include <fcitx-utils/event.h>
@@ -29,7 +31,6 @@
 #include <unicode/unistr.h>
 #include <unicode/utypes.h>
 #include <unistd.h>
-#include <vector>
 
 void UnixKeyState::updateUI() {
   auto &inputPanel = ic_->inputPanel();
@@ -44,13 +45,34 @@ void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
     return keyEvent.filterAndAccept();
   }
 
-  std::optional<applyReplacement> apply =
-      matcher_.updateMatch(keyEvent.key().toString());
+  if (keyEvent.key().check(FcitxKey_BackSpace)) {
+    matcher_.backspace();
+    return keyEvent.filterAndAccept();
+  }
+
+  // just reset matcher on these ones (i might add handling for them later but
+  // that's not a priority)
+  if (keyEvent.key().check(FcitxKey_Return) ||
+      keyEvent.key().check(FcitxKey_Left) ||
+      keyEvent.key().check(FcitxKey_Right) ||
+      keyEvent.key().check(FcitxKey_Down) ||
+      keyEvent.key().check(FcitxKey_Up)) {
+    matcher_.reset();
+    return keyEvent.filterAndAccept();
+  }
+
+  std::optional<replacementRequest> apply =
+      matcher_.updateMatch(fcitx::Key::keySymToUTF8(keyEvent.key().sym()));
   if (apply != std::nullopt) {
     for (size_t i = 0; i < apply->match.size(); i++) {
       ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
     }
-    ic_->commitString(apply->replacement);
+    timer_ = engine_->instance()->eventLoop().addTimeEvent(
+        CLOCK_MONOTONIC, fcitx::now(CLOCK_MONOTONIC) + 5000, 0,
+        [this, apply](fcitx::EventSourceTime *, unsigned long) {
+          ic_->commitString(apply->replacement);
+          return false;
+        });
   }
 
   updateUI();

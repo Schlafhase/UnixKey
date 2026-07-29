@@ -5,9 +5,6 @@
 #include "../substitution/replacement.h"
 #include <Fcitx5/Module/fcitx-module/punctuation/punctuation_public.h>
 #include <Fcitx5/Module/fcitx-module/quickphrase/quickphrase_public.h>
-#include <algorithm>
-#include <cstddef>
-#include <ctime>
 #include <fcitx-utils/capabilityflags.h>
 #include <fcitx-utils/cutf8.h>
 #include <fcitx-utils/event.h>
@@ -30,6 +27,7 @@
 #include <fcitx/userinterface.h>
 #include <fcitx/userinterfacemanager.h>
 #include <iconv.h>
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <unicode/brkiter.h>
@@ -57,6 +55,7 @@ private:
   UnixKeyEngine *engine_;
   Matcher matcher_;
   fcitx::InputContext *ic_;
+  std::unique_ptr<fcitx::EventSourceTime> timer_;
 };
 
 #endif // _FCITX5_UNIXKEYSTATE_H_

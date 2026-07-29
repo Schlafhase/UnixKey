@@ -6,11 +6,12 @@
 #include <string>
 #include <vector>
 
-struct applyReplacement {
+struct replacementRequest {
   std::string match;
   std::string replacement;
 };
 
+// TODO: implement lastReplacement
 class Matcher {
 public:
   // Initialise the matcher with a vector of replacements. Replacements MUST be
@@ -23,14 +24,21 @@ public:
   // fields correspondingly. If no match was found it returns an
   // applyReplacement which contains necessary information to apply a
   // substitution. Otherwise NULL is returned.
-  std::optional<applyReplacement> updateMatch(std::string additionalInput);
+  std::optional<replacementRequest> updateMatch(std::string additionalInput);
+  // Simulates a backspace (updates the state of the matcher but will never
+  // result in a match (at least i think and hope so))
+  void backspace();
+  replacementRequest lastReplacement;
 
-  std::string currentMatch_ = "";
-  replacement *currentReplacement_ = NULL;
+  void reset() {
+    currentReplacement_ = NULL;
+    currentMatch_ = "";
+  }
 
 private:
   std::vector<replacement> replacements_;
-
+  std::string currentMatch_ = "";
+  replacement *currentReplacement_ = NULL;
   bool getLongestSubstitution(std::string string);
 };
 

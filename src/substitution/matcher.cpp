@@ -1,6 +1,7 @@
 #include "matcher.h"
 #include "replacement.h"
 #include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <fcitx-utils/log.h>
 #include <fstream>
@@ -10,6 +11,24 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+
+replacementRequest buildRequest(std::string from, std::string currentInputValue,
+                                std::string to) {
+  std::string replacement = to;
+  if (to == "UNIXKEY_PRESERVE") {
+    replacement = currentInputValue;
+  } else {
+    if (currentInputValue.size() > from.size()) {
+      replacement += currentInputValue.substr(from.size());
+    }
+  }
+  replacementRequest result{.match = currentInputValue,
+                            .replacement = replacement};
+  FCITX_INFO() << "applying";
+  FCITX_INFO() << "from: " << result.match;
+  FCITX_INFO() << "to: " << result.replacement;
+  return result;
+}
 
 Matcher::Matcher(std::vector<replacement> replacements, bool sorted) {
   replacements_ = replacements;
@@ -39,7 +58,10 @@ Matcher::Matcher(std::string replacementFile) {
 
   std::vector<replacement> result;
   for (const auto &[key, value] : map) {
-    result.push_back({key, value});
+    std::string keyLower = key;
+    std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
+                   ::tolower);
+    result.push_back({keyLower, value});
   }
   replacements_ = result;
   std::sort(replacements_.begin(), replacements_.end(),
@@ -48,7 +70,8 @@ Matcher::Matcher(std::string replacementFile) {
             });
 }
 
-std::optional<applyReplacement>
+// TODO: allow specifying case sensitivity somehow
+std::optional<replacementRequest>
 Matcher::updateMatch(std::string additionalInput) {
   FCITX_INFO() << "additionalInput: " << additionalInput;
 
@@ -86,7 +109,7 @@ Matcher::updateMatch(std::string additionalInput) {
       break;
     }
     char expected = expectedAdditional[i];
-    if (c != expected) {
+    if ((char)::tolower(c) != (char)::tolower(expected)) {
       FCITX_INFO() << "mismatch";
       // not matching anymore :( 😢
       // find new match :)
@@ -95,7 +118,10 @@ Matcher::updateMatch(std::string additionalInput) {
         // new match HAS been found: check if it is a full match already
         FCITX_INFO() << "new match found";
         FCITX_INFO() << "new match: " << currentReplacement_->from;
-        if (currentMatch_.starts_with(currentReplacement_->from)) {
+        std::string currentMatchLower = currentMatch_;
+        std::transform(currentMatchLower.begin(), currentMatchLower.end(),
+                       currentMatchLower.begin(), ::tolower);
+        if (currentMatchLower.starts_with(currentReplacement_->from)) {
           break;
           // linux torvald wouldn't approve ts because of too much indentation
           // 😔
@@ -103,28 +129,10 @@ Matcher::updateMatch(std::string additionalInput) {
         // otherwise just return NULL and continue
         return std::nullopt;
       } else {
-        // TODO: CHECK IF IT ACTUALLY MATCHES BECAUSE OTHERWISE WEIRD STUFF
-        // HAPPENS!!!!!!
-        // TODO: CHECK IF IT ACTUALLY MATCHES BECAUSE OTHERWISE WEIRD STUFF
-        // TODO: CHECK IF IT ACTUALLY MATCHES BECAUSE OTHERWISE WEIRD STUFF
-        // TODO: CHECK IF IT ACTUALLY MATCHES BECAUSE OTHERWISE WEIRD STUFF
-        // TODO: CHECK IF IT ACTUALLY MATCHES BECAUSE OTHERWISE WEIRD STUFF
-        // TODO: CHECK IF IT ACTUALLY MATCHES BECAUSE OTHERWISE WEIRD STUFF
-        // HAPPENS!!!!!!
-        // HAPPENS!!!!!!
-        // HAPPENS!!!!!!
-        // HAPPENS!!!!!!
-        // HAPPENS!!!!!!
-        FCITX_INFO() << "no other match found applying";
-        // no other matching substitution found: apply the match that just
-        // ended
-        applyReplacement result{.match = currentMatch_,
-                                .replacement = currentReplacement_->to};
-        currentMatch_ = "";
-        currentReplacement_ = NULL;
-        FCITX_INFO() << "from: " << result.match;
-        FCITX_INFO() << "to: " << result.replacement;
-        return result;
+        // current match didn't match anymore and no new one could be found :(((
+        // need to reset stuff
+        reset();
+        return std::nullopt;
       }
     }
     // if the character was expected:
@@ -132,26 +140,30 @@ Matcher::updateMatch(std::string additionalInput) {
   }
 
   // if the match has been completed apply it
-  if (currentMatch_.starts_with(currentReplacement_->from)) {
-    std::string replacement = currentReplacement_->to;
-    if (newInput.size() > currentReplacement_->from.size()) {
-      replacement += newInput.substr(currentReplacement_->from.size());
-    }
-    applyReplacement result{.match = newInput, .replacement = replacement};
-    currentMatch_ = "";
-    currentReplacement_ = NULL;
-    FCITX_INFO() << "applying";
-    FCITX_INFO() << "from: " << result.match;
-    FCITX_INFO() << "to: " << result.replacement;
-    return result;
+  std::string currentMatchLower = currentMatch_;
+  std::transform(currentMatchLower.begin(), currentMatchLower.end(),
+                 currentMatchLower.begin(), ::tolower);
+  if (currentMatchLower.starts_with(currentReplacement_->from)) {
+    replacementRequest request = buildRequest(
+        currentReplacement_->from, newInput, currentReplacement_->to);
+    reset();
+    return request;
   }
   return std::nullopt;
 }
 
+void Matcher::backspace() {
+  // TODO: this is bytes not unicode, should work in most cases but not all;
+  // might be worth implementing unicode
+  if (!currentMatch_.empty()) {
+    currentMatch_.pop_back();
+  }
+}
+
 bool matchToEnd(std::string a, std::string b) {
   for (size_t i = 0; i < a.size() && i < b.size(); i++) {
-    char ac = a[i];
-    char bc = b[i];
+    char ac = (char)::tolower(a[i]);
+    char bc = (char)::tolower(b[i]);
     if (ac != bc) {
       return false;
     }
