@@ -2,7 +2,6 @@
 #define _FCITX5_UNIXKEYSTATE_H_
 
 #include "../substitution/matcher.h"
-#include "../substitution/replacement.h"
 #include <Fcitx5/Module/fcitx-module/punctuation/punctuation_public.h>
 #include <Fcitx5/Module/fcitx-module/quickphrase/quickphrase_public.h>
 #include <fcitx-utils/capabilityflags.h>
@@ -34,18 +33,12 @@
 #include <unicode/unistr.h>
 #include <unicode/utypes.h>
 #include <unistd.h>
-#include <vector>
 class UnixKeyEngine;
 
 class UnixKeyState : public fcitx::InputContextProperty {
 public:
-  std::vector<replacement> replacements;
-
-  UnixKeyState(UnixKeyEngine *engine, fcitx::InputContext *ic,
-               std::vector<replacement> r)
-      : replacements(r), engine_(engine), matcher_(replacements), ic_(ic) {
-    replacements = r;
-  }
+  UnixKeyState(UnixKeyEngine *engine, fcitx::InputContext *ic, unixKeyConfig c)
+      : engine_(engine), matcher_(c), ic_(ic) {}
 
   void keyEvent(fcitx::KeyEvent &keyEvent);
   void updateUI();

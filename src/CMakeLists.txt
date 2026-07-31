@@ -1,4 +1,4 @@
-add_library(unixkey SHARED inputevents/unixkey.cpp inputevents/unixkeystate.cpp substitution/matcher.cpp)
+add_library(unixkey SHARED inputevents/unixkey.cpp inputevents/unixkeystate.cpp substitution/matcher.cpp substitution/config.cpp)
 target_link_libraries(unixkey PRIVATE Fcitx5::Core)
 target_link_libraries(unixkey PRIVATE ICU::uc ICU::io)
 set_target_properties(unixkey PROPERTIES PREFIX "")

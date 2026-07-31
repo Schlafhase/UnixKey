@@ -1,16 +1,15 @@
 #include "matcher.h"
+#include "config.h"
 #include "replacement.h"
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
 #include <fcitx-utils/log.h>
-#include <fstream>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <stdio.h>
 #include <string>
-#include <vector>
 
 replacementRequest buildRequest(std::string from, std::string currentInputValue,
                                 std::string to) {
@@ -30,47 +29,9 @@ replacementRequest buildRequest(std::string from, std::string currentInputValue,
   return result;
 }
 
-Matcher::Matcher(std::vector<replacement> replacements, bool sorted) {
-  replacements_ = replacements;
-  // order replacements longest to shortest
-  if (!sorted) {
-    std::sort(replacements_.begin(), replacements_.end(),
-              [](const replacement &a, const replacement &b) {
-                return a.from.size() > b.from.size();
-              });
-  }
-}
+Matcher::Matcher(unixKeyConfig c) : config_(c) {}
+Matcher::Matcher(std::string replacementFile) : config_{replacementFile} {}
 
-Matcher::Matcher(std::string replacementFile) {
-  // read replacements from json
-  std::ifstream fin(replacementFile);
-  nlohmann::json obj;
-  try {
-    fin >> obj;
-  } catch (const nlohmann::json::parse_error &e) {
-    FCITX_ERROR() << "Either the config file at ~/.config/unixkey.json "
-                     "doesn't exist or it's invalid."
-                  << e.what();
-    exit(1);
-  }
-  std::unordered_map<std::string, std::string> map =
-      obj.get<std::unordered_map<std::string, std::string>>();
-
-  std::vector<replacement> result;
-  for (const auto &[key, value] : map) {
-    std::string keyLower = key;
-    std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
-                   ::tolower);
-    result.push_back({keyLower, value});
-  }
-  replacements_ = result;
-  std::sort(replacements_.begin(), replacements_.end(),
-            [](const replacement &a, const replacement &b) {
-              return a.from.size() > b.from.size();
-            });
-}
-
-// TODO: allow specifying case sensitivity somehow
 std::optional<replacementRequest>
 Matcher::updateMatch(std::string additionalInput) {
   FCITX_INFO() << "additionalInput: " << additionalInput;
@@ -109,7 +70,15 @@ Matcher::updateMatch(std::string additionalInput) {
       break;
     }
     char expected = expectedAdditional[i];
-    if ((char)::tolower(c) != (char)::tolower(expected)) {
+    bool match;
+    if (currentReplacement_->caseSensitive) {
+      match = c == expected;
+    } else {
+      // expected should be lowercase anyways because the config constructor
+      // does that
+      match = (char)::tolower(c) == expected;
+    }
+    if (!match) {
       FCITX_INFO() << "mismatch";
       // not matching anymore :( 😢
       // find new match :)
@@ -118,10 +87,12 @@ Matcher::updateMatch(std::string additionalInput) {
         // new match HAS been found: check if it is a full match already
         FCITX_INFO() << "new match found";
         FCITX_INFO() << "new match: " << currentReplacement_->from;
-        std::string currentMatchLower = currentMatch_;
-        std::transform(currentMatchLower.begin(), currentMatchLower.end(),
-                       currentMatchLower.begin(), ::tolower);
-        if (currentMatchLower.starts_with(currentReplacement_->from)) {
+        std::string compareString = currentMatch_;
+        if (!currentReplacement_->caseSensitive) {
+          std::transform(compareString.begin(), compareString.end(),
+                         compareString.begin(), ::tolower);
+        }
+        if (compareString.starts_with(currentReplacement_->from)) {
           break;
           // linux torvald wouldn't approve ts because of too much indentation
           // 😔
@@ -140,10 +111,12 @@ Matcher::updateMatch(std::string additionalInput) {
   }
 
   // if the match has been completed apply it
-  std::string currentMatchLower = currentMatch_;
-  std::transform(currentMatchLower.begin(), currentMatchLower.end(),
-                 currentMatchLower.begin(), ::tolower);
-  if (currentMatchLower.starts_with(currentReplacement_->from)) {
+  std::string compareString = currentMatch_;
+  if (!currentReplacement_->caseSensitive) {
+    std::transform(compareString.begin(), compareString.end(),
+                   compareString.begin(), ::tolower);
+  }
+  if (compareString.starts_with(currentReplacement_->from)) {
     replacementRequest request = buildRequest(
         currentReplacement_->from, newInput, currentReplacement_->to);
     reset();
@@ -160,10 +133,17 @@ void Matcher::backspace() {
   }
 }
 
-bool matchToEnd(std::string a, std::string b) {
+bool matchToEnd(std::string a, std::string b, bool ignoreCase) {
   for (size_t i = 0; i < a.size() && i < b.size(); i++) {
-    char ac = (char)::tolower(a[i]);
-    char bc = (char)::tolower(b[i]);
+    char ac;
+    char bc;
+    if (ignoreCase) {
+      ac = (char)::tolower(a[i]);
+      bc = (char)::tolower(b[i]);
+    } else {
+      ac = a[i];
+      bc = b[i];
+    }
     if (ac != bc) {
       return false;
     }
@@ -178,10 +158,10 @@ bool Matcher::getLongestSubstitution(std::string string) {
   for (size_t i = 0; i < string.size(); i++) {
     std::string substring = string.substr(i);
     // start with longest first
-    for (replacement &r : replacements_) {
+    for (replacement &r : config_.replacements) {
       // they have to match up to the end of either string (maybe?? thisis
       // confsuing me)
-      if (matchToEnd(r.from, substring)) {
+      if (matchToEnd(r.from, substring, !r.caseSensitive)) {
         // match!!!
         currentReplacement_ = &r;
         currentMatch_ = substring;

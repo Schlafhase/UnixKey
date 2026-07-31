@@ -6,6 +6,7 @@
 struct replacement {
   std::string from;
   std::string to;
+  bool caseSensitive;
 };
 
 #endif // _UNIXKEY_REPLACEMENT_H_

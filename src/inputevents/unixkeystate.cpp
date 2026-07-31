@@ -39,6 +39,8 @@ void UnixKeyState::updateUI() {
   ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
 }
 
+// TODO: add logic that queues keypresses when old text is currently being
+// deleted
 void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
   ic_->forwardKey(keyEvent.key());
   if (keyEvent.isRelease() || keyEvent.key().states()) {
