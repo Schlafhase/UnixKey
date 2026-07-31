@@ -1,4 +1,5 @@
 add_executable(UnixKeyTest)
+# target_compile_definitions(UnixKeyTest PRIVATE ENABLE_DEBUG_LOGS>)
 
 target_sources(UnixKeyTest
   PRIVATE

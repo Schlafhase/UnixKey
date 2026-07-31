@@ -28,7 +28,8 @@ unixKeyConfig::unixKeyConfig(std::string file) {
   }
   for (const auto &[key, value] : jsonConfig.caseInsensitive) {
     std::string keyLower = key;
-    // case insensitive stuff can just be lowercased because i don't care about the case
+    // case insensitive stuff can just be lowercased because i don't care about
+    // the case
     std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
                    ::tolower);
     replacements.push_back({keyLower, value, false});
@@ -38,4 +39,5 @@ unixKeyConfig::unixKeyConfig(std::string file) {
             [](const replacement &a, const replacement &b) {
               return a.from.size() > b.from.size();
             });
+  debug = false;
 }

@@ -9,6 +9,8 @@
 struct unixKeyConfig {
 public:
   std::vector<replacement> replacements;
+  // Will log more data but may include sensitive data (like every single keypress)
+  bool debug;
 
   unixKeyConfig(std::string file);
 };

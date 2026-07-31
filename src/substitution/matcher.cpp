@@ -1,5 +1,6 @@
 #include "matcher.h"
 #include "config.h"
+#include "logger.h"
 #include "replacement.h"
 #include <algorithm>
 #include <cctype>
@@ -23,9 +24,9 @@ replacementRequest buildRequest(std::string from, std::string currentInputValue,
   }
   replacementRequest result{.match = currentInputValue,
                             .replacement = replacement};
-  FCITX_INFO() << "applying";
-  FCITX_INFO() << "from: " << result.match;
-  FCITX_INFO() << "to: " << result.replacement;
+  DEBUG_LOG("applying");
+  DEBUG_LOG(result.match);
+  DEBUG_LOG(result.replacement);
   return result;
 }
 
@@ -34,32 +35,34 @@ Matcher::Matcher(std::string replacementFile) : config_{replacementFile} {}
 
 std::optional<replacementRequest>
 Matcher::updateMatch(std::string additionalInput) {
-  FCITX_INFO() << "additionalInput: " << additionalInput;
+  if (config_.debug) {
+    FCITX_INFO() << "additionalInput: " << additionalInput;
+  }
 
   // engine is not trying to match a replacement at this point so try to find if
   // it should start matching. If currentReplacement_ is NULL, currentMatch_
   // SHOULD be empty (let's pray that it is :D)
   if (currentReplacement_ == NULL) {
-    FCITX_INFO() << "no current replacement trying to find new one";
+    DEBUG_LOG("no current replacement trying to find new one");
     // don't care if no matching substitution was found
     getLongestSubstitution(additionalInput);
     if (currentReplacement_ != NULL) {
-      FCITX_INFO() << "found new replacement";
-      FCITX_INFO() << "new replacement: " << currentReplacement_->from;
+      DEBUG_LOG("found new replacement");
+      DEBUG_LOG("new replacement: " + currentReplacement_->from);
     }
     return std::nullopt;
   }
 
   std::string newInput = currentMatch_ + additionalInput;
 
-  FCITX_INFO() << "calculating expected string";
-  FCITX_INFO() << "currentReplacement: " << currentReplacement_->from;
-  FCITX_INFO() << "current match: " << currentMatch_;
+  DEBUG_LOG("calculating expected string");
+  DEBUG_LOG("currentReplacement: " + currentReplacement_->from);
+  DEBUG_LOG("current match: " + currentMatch_);
   // Check what's needed to continue current replacement
   std::string expectedAdditional =
       currentReplacement_->from.substr(currentMatch_.size());
 
-  FCITX_INFO() << "expecting: " << expectedAdditional;
+  DEBUG_LOG("expecting: " + expectedAdditional);
 
   // check if the tihngs match 👍
   for (size_t i = 0; i < additionalInput.size(); i++) {
@@ -79,14 +82,14 @@ Matcher::updateMatch(std::string additionalInput) {
       match = (char)::tolower(c) == expected;
     }
     if (!match) {
-      FCITX_INFO() << "mismatch";
+      DEBUG_LOG("mismatch");
       // not matching anymore :( 😢
       // find new match :)
       if (getLongestSubstitution(newInput)) {
         newInput = currentMatch_;
         // new match HAS been found: check if it is a full match already
-        FCITX_INFO() << "new match found";
-        FCITX_INFO() << "new match: " << currentReplacement_->from;
+        DEBUG_LOG("new match found");
+        DEBUG_LOG("new match: " + currentReplacement_->from);
         std::string compareString = currentMatch_;
         if (!currentReplacement_->caseSensitive) {
           std::transform(compareString.begin(), compareString.end(),

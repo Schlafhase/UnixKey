@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "replacement.h"
+#include <fcitx-utils/log.h>
 #include <optional>
 #include <string>
 
@@ -36,6 +37,12 @@ private:
   std::string currentMatch_ = "";
   replacement *currentReplacement_ = NULL;
   bool getLongestSubstitution(std::string string);
+
+  void debug(std::string message) {
+    if (config_.debug) {
+      FCITX_INFO() << message;
+    }
+  };
 };
 
 #endif // _UNIXKEY_MATCHER_H_
