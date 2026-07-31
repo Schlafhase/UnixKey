@@ -25,17 +25,18 @@ public:
   // Simulates a backspace (updates the state of the matcher but will never
   // result in a match (at least i think and hope so))
   void backspace();
-  replacementRequest lastReplacement;
+  std::optional<replacementRequest> lastReplacement;
 
   void reset() {
-    currentReplacement_ = NULL;
+    currentReplacement_ = std::nullopt;
+    lastReplacement = std::nullopt;
     currentMatch_ = "";
   }
 
 private:
   unixKeyConfig config_;
   std::string currentMatch_ = "";
-  replacement *currentReplacement_ = NULL;
+  std::optional<replacement> currentReplacement_ = std::nullopt;
   bool getLongestSubstitution(std::string string);
 
   void debug(std::string message) {

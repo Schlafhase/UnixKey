@@ -38,7 +38,7 @@ class UnixKeyEngine;
 class UnixKeyState : public fcitx::InputContextProperty {
 public:
   UnixKeyState(UnixKeyEngine *engine, fcitx::InputContext *ic, unixKeyConfig c)
-      : engine_(engine), matcher_(c), ic_(ic) {}
+      : engine_(engine), matcher_(c), config_(c), ic_(ic) {}
 
   void keyEvent(fcitx::KeyEvent &keyEvent);
   void updateUI();
@@ -47,8 +47,11 @@ public:
 private:
   UnixKeyEngine *engine_;
   Matcher matcher_;
+  unixKeyConfig config_;
   fcitx::InputContext *ic_;
   std::unique_ptr<fcitx::EventSourceTime> timer_;
+
+  void apply(const replacementRequest &request);
 };
 
 #endif // _FCITX5_UNIXKEYSTATE_H_

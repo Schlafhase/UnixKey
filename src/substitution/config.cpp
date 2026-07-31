@@ -1,19 +1,23 @@
 #include "config.h"
+#include <fcitx-utils/key.h>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 
 void from_json(const nlohmann::json &j, unixKeyConfigJson &c) {
+  j.at("undo_key").get_to(c.undoKey);
   j.at("case_sensitive").get_to(c.caseSensitive);
   j.at("case_insensitive").get_to(c.caseInsensitive);
 }
 
 void to_json(nlohmann::json &j, const unixKeyConfigJson &c) {
   j = nlohmann::json{{"case_sensitive", c.caseSensitive},
-                     {"case_insensitive", c.caseInsensitive}};
+                     {"case_insensitive", c.caseInsensitive},
+                     {"undo_key", c.undoKey}};
 }
 
 unixKeyConfig::unixKeyConfig(std::string file) {
+  // convert to raw json object
   std::ifstream in(file);
   nlohmann::json j = nlohmann::json::parse(in);
 
@@ -28,8 +32,8 @@ unixKeyConfig::unixKeyConfig(std::string file) {
   }
   for (const auto &[key, value] : jsonConfig.caseInsensitive) {
     std::string keyLower = key;
-    // case insensitive stuff can just be lowercased because i don't care about
-    // the case
+    // case insensitive stuff can just be lowercased because i don't care
+    // about the case
     std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
                    ::tolower);
     replacements.push_back({keyLower, value, false});
@@ -39,5 +43,8 @@ unixKeyConfig::unixKeyConfig(std::string file) {
             [](const replacement &a, const replacement &b) {
               return a.from.size() > b.from.size();
             });
+
+  // TODO: might not work
+  undoKey = fcitx::KeySym(jsonConfig.undoKey);
   debug = false;
 }

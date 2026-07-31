@@ -4,6 +4,7 @@
 #include "replacement.h"
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstdlib>
 #include <fcitx-utils/log.h>
 #include <nlohmann/json.hpp>
@@ -36,17 +37,24 @@ Matcher::Matcher(std::string replacementFile) : config_{replacementFile} {}
 std::optional<replacementRequest>
 Matcher::updateMatch(std::string additionalInput) {
   if (config_.debug) {
-    FCITX_INFO() << "additionalInput: " << additionalInput;
+    DEBUG_LOG("additionalInput: " + additionalInput);
+  }
+
+  if (lastReplacement != std::nullopt) {
+    DEBUG_LOG("appending additional input to last replacement");
+    lastReplacement->match += additionalInput;
+    lastReplacement->replacement += additionalInput;
+    DEBUG_LOG("last replacement match: " + lastReplacement->match);
   }
 
   // engine is not trying to match a replacement at this point so try to find if
   // it should start matching. If currentReplacement_ is NULL, currentMatch_
   // SHOULD be empty (let's pray that it is :D)
-  if (currentReplacement_ == NULL) {
+  if (currentReplacement_ == std::nullopt) {
     DEBUG_LOG("no current replacement trying to find new one");
     // don't care if no matching substitution was found
     getLongestSubstitution(additionalInput);
-    if (currentReplacement_ != NULL) {
+    if (currentReplacement_ != std::nullopt) {
       DEBUG_LOG("found new replacement");
       DEBUG_LOG("new replacement: " + currentReplacement_->from);
     }
@@ -120,9 +128,15 @@ Matcher::updateMatch(std::string additionalInput) {
                    compareString.begin(), ::tolower);
   }
   if (compareString.starts_with(currentReplacement_->from)) {
+    bool preserve = currentReplacement_->to == "UNIXKEY_PRESERVE";
     replacementRequest request = buildRequest(
         currentReplacement_->from, newInput, currentReplacement_->to);
     reset();
+    if (!preserve) {
+      lastReplacement = {request.replacement, request.match};
+      DEBUG_LOG("set last replacement: " + lastReplacement->match + "->" +
+                lastReplacement->replacement);
+    }
     return request;
   }
   return std::nullopt;
@@ -166,7 +180,7 @@ bool Matcher::getLongestSubstitution(std::string string) {
       // confsuing me)
       if (matchToEnd(r.from, substring, !r.caseSensitive)) {
         // match!!!
-        currentReplacement_ = &r;
+        currentReplacement_ = r;
         currentMatch_ = substring;
         return true;
       }

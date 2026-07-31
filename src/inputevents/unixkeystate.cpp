@@ -39,9 +39,30 @@ void UnixKeyState::updateUI() {
   ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
 }
 
+// TODO: this counts bytes not unicode which, especially in this case, is a problem
+void UnixKeyState::apply(const replacementRequest &request) {
+  for (size_t i = 0; i < request.match.size(); i++) {
+    ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
+  }
+  timer_ = engine_->instance()->eventLoop().addTimeEvent(
+      CLOCK_MONOTONIC, fcitx::now(CLOCK_MONOTONIC) + 5000, 0,
+      [this, request](fcitx::EventSourceTime *, unsigned long) {
+        ic_->commitString(request.replacement);
+        return false;
+      });
+}
+
 // TODO: add logic that queues keypresses when old text is currently being
 // deleted
 void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
+  if (keyEvent.key().check(config_.undoKey) && !keyEvent.isRelease()) {
+    if (matcher_.lastReplacement != std::nullopt) {
+      apply(*matcher_.lastReplacement);
+      matcher_.lastReplacement = std::nullopt;
+      return keyEvent.filterAndAccept();
+    }
+  }
+
   ic_->forwardKey(keyEvent.key());
   if (keyEvent.isRelease() || keyEvent.key().states()) {
     return keyEvent.filterAndAccept();
@@ -63,18 +84,10 @@ void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
     return keyEvent.filterAndAccept();
   }
 
-  std::optional<replacementRequest> apply =
+  std::optional<replacementRequest> request =
       matcher_.updateMatch(fcitx::Key::keySymToUTF8(keyEvent.key().sym()));
-  if (apply != std::nullopt) {
-    for (size_t i = 0; i < apply->match.size(); i++) {
-      ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
-    }
-    timer_ = engine_->instance()->eventLoop().addTimeEvent(
-        CLOCK_MONOTONIC, fcitx::now(CLOCK_MONOTONIC) + 5000, 0,
-        [this, apply](fcitx::EventSourceTime *, unsigned long) {
-          ic_->commitString(apply->replacement);
-          return false;
-        });
+  if (request != std::nullopt) {
+    apply(request.value());
   }
 
   updateUI();
