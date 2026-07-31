@@ -1,4 +1,6 @@
-#pragma once
+#ifndef _UNIXKEY_LOG_H_
+#define _UNIXKEY_LOG_H_
+
 #include <fcitx-utils/log.h>
 
 #ifdef ENABLE_DEBUG_LOGS
@@ -8,3 +10,4 @@
   do {                                                                         \
   } while (false)
 #endif
+#endif // _UNIXKEY_LOG_H_
