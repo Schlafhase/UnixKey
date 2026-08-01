@@ -26,6 +26,7 @@
 #include <fcitx/userinterface.h>
 #include <fcitx/userinterfacemanager.h>
 #include <iconv.h>
+#include <memory>
 #include <optional>
 #include <unicode/brkiter.h>
 #include <unicode/unistr.h>
@@ -39,9 +40,30 @@ void UnixKeyState::updateUI() {
   ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
 }
 
-// TODO: this counts bytes not unicode which, especially in this case, is a problem
+int countGraphemeClusters(const std::string &input) {
+  UErrorCode status = U_ZERO_ERROR;
+  icu::UnicodeString ustr = icu::UnicodeString::fromUTF8(input);
+
+  std::unique_ptr<icu::BreakIterator> it(
+      icu::BreakIterator::createCharacterInstance(icu::Locale::getDefault(),
+                                                  status));
+
+  if (U_FAILURE(status)) {
+    return -1;
+  }
+
+  it->setText(ustr);
+
+  size_t count = 0;
+  for (int32_t pos = it->next(); pos != icu::BreakIterator::DONE;
+       pos = it->next()) {
+    count++;
+  }
+  return count;
+}
+
 void UnixKeyState::apply(const replacementRequest &request) {
-  for (size_t i = 0; i < request.match.size(); i++) {
+  for (int i = 0; i < countGraphemeClusters(request.match); i++) {
     ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
   }
   timer_ = engine_->instance()->eventLoop().addTimeEvent(
@@ -56,18 +78,20 @@ void UnixKeyState::apply(const replacementRequest &request) {
 // deleted
 void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
   if (keyEvent.key().check(config_.undoKey) && !keyEvent.isRelease()) {
-    if (matcher_.lastReplacement != std::nullopt) {
-      apply(*matcher_.lastReplacement);
-      matcher_.lastReplacement = std::nullopt;
+    auto lr = matcher_.lastReplacement();
+    if (lr.has_value()) {
+      apply(*lr);
+      matcher_.resetLastReplacement();
+      matcher_.reset();
       return keyEvent.filterAndAccept();
     }
   }
 
   ic_->forwardKey(keyEvent.key());
+
   if (keyEvent.isRelease() || keyEvent.key().states()) {
     return keyEvent.filterAndAccept();
   }
-
   if (keyEvent.key().check(FcitxKey_BackSpace)) {
     matcher_.backspace();
     return keyEvent.filterAndAccept();
@@ -81,12 +105,13 @@ void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
       keyEvent.key().check(FcitxKey_Down) ||
       keyEvent.key().check(FcitxKey_Up)) {
     matcher_.reset();
+    matcher_.resetLastReplacement();
     return keyEvent.filterAndAccept();
   }
 
   std::optional<replacementRequest> request =
       matcher_.updateMatch(fcitx::Key::keySymToUTF8(keyEvent.key().sym()));
-  if (request != std::nullopt) {
+  if (request.has_value()) {
     apply(request.value());
   }
 

@@ -1,5 +1,6 @@
 {
-  "undo_key": 92,
+  "undo_key": 65288,
+  "undo_reset": 5,
   "case_sensitive": {
     "ae": "ä",
     "Ae": "Ä",
@@ -9,17 +10,17 @@
     "OE": "Ö",
     "ue": "ü",
     "Ue": "Ü",
-    "UE": "ü",
-    "strasse": "straße",
-    "groesser": "größer",
-    "grosss": "groß"
+    "UE": "Ü",
+    "trueg": "trüg",
+    "Trueg": "Trüg"
   },
   "case_insensitive": {
+    "ss'": "ß",
     "true": "UNIXKEY_PRESERVE",
     "blue": "UNIXKEY_PRESERVE",
     "value": "UNIXKEY_PRESERVE",
     "does": "UNIXKEY_PRESERVE",
-    "quest": "UNIXKEY_PRESERVE",
+    "que": "UNIXKEY_PRESERVE",
     "queue": "UNIXKEY_PRESERVE",
     "[email]": "me@example.com",
     "[tel]": "+12 34 567890",

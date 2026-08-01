@@ -4,7 +4,6 @@
 #include "replacement.h"
 #include <algorithm>
 #include <cctype>
-#include <chrono>
 #include <cstdlib>
 #include <fcitx-utils/log.h>
 #include <nlohmann/json.hpp>
@@ -13,11 +12,12 @@
 #include <stdio.h>
 #include <string>
 
-replacementRequest buildRequest(std::string from, std::string currentInputValue,
-                                std::string to) {
+replacementRequest buildRequest(const std::string &from,
+                                const std::string &currentInputValue,
+                                const std::string &to) {
   std::string replacement = to;
   if (to == "UNIXKEY_PRESERVE") {
-    replacement = currentInputValue;
+    return {"", ""};
   } else {
     if (currentInputValue.size() > from.size()) {
       replacement += currentInputValue.substr(from.size());
@@ -31,30 +31,34 @@ replacementRequest buildRequest(std::string from, std::string currentInputValue,
   return result;
 }
 
-Matcher::Matcher(unixKeyConfig c) : config_(c) {}
-Matcher::Matcher(std::string replacementFile) : config_{replacementFile} {}
+Matcher::Matcher(unixKeyConfig c) : config_(std::move(c)) {}
+Matcher::Matcher(std::string replacementFile) : config_(replacementFile) {}
 
 std::optional<replacementRequest>
 Matcher::updateMatch(std::string additionalInput) {
-  if (config_.debug) {
-    DEBUG_LOG("additionalInput: " + additionalInput);
-  }
+  DEBUG_LOG("additionalInput: " + additionalInput);
 
-  if (lastReplacement != std::nullopt) {
-    DEBUG_LOG("appending additional input to last replacement");
-    lastReplacement->match += additionalInput;
-    lastReplacement->replacement += additionalInput;
-    DEBUG_LOG("last replacement match: " + lastReplacement->match);
+  if (lastReplacement_.has_value()) {
+    if (insertionsSinceLastReplacement >= config_.undoReset) {
+      DEBUG_LOG("exceeded undo reset config value, resetting lastreplacement");
+      resetLastReplacement();
+    } else {
+      DEBUG_LOG("appending additional input to last replacement");
+      lastReplacement_->match += additionalInput;
+      lastReplacement_->replacement += additionalInput;
+      insertionsSinceLastReplacement++;
+      DEBUG_LOG("last replacement match: " + lastReplacement_->match);
+    }
   }
 
   // engine is not trying to match a replacement at this point so try to find if
   // it should start matching. If currentReplacement_ is NULL, currentMatch_
   // SHOULD be empty (let's pray that it is :D)
-  if (currentReplacement_ == std::nullopt) {
+  if (!currentReplacement_.has_value()) {
     DEBUG_LOG("no current replacement trying to find new one");
     // don't care if no matching substitution was found
     getLongestSubstitution(additionalInput);
-    if (currentReplacement_ != std::nullopt) {
+    if (currentReplacement_.has_value()) {
       DEBUG_LOG("found new replacement");
       DEBUG_LOG("new replacement: " + currentReplacement_->from);
     }
@@ -133,9 +137,9 @@ Matcher::updateMatch(std::string additionalInput) {
         currentReplacement_->from, newInput, currentReplacement_->to);
     reset();
     if (!preserve) {
-      lastReplacement = {request.replacement, request.match};
-      DEBUG_LOG("set last replacement: " + lastReplacement->match + "->" +
-                lastReplacement->replacement);
+      lastReplacement_ = {request.replacement, request.match};
+      DEBUG_LOG("set last replacement: " + lastReplacement_->match + "->" +
+                lastReplacement_->replacement);
     }
     return request;
   }
@@ -150,7 +154,8 @@ void Matcher::backspace() {
   }
 }
 
-bool matchToEnd(std::string a, std::string b, bool ignoreCase) {
+static bool matchToEnd(const std::string &a, const std::string &b,
+                       bool ignoreCase) {
   for (size_t i = 0; i < a.size() && i < b.size(); i++) {
     char ac;
     char bc;
@@ -175,7 +180,7 @@ bool Matcher::getLongestSubstitution(std::string string) {
   for (size_t i = 0; i < string.size(); i++) {
     std::string substring = string.substr(i);
     // start with longest first
-    for (replacement &r : config_.replacements) {
+    for (const replacement &r : config_.replacements) {
       // they have to match up to the end of either string (maybe?? thisis
       // confsuing me)
       if (matchToEnd(r.from, substring, !r.caseSensitive)) {

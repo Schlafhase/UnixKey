@@ -6,6 +6,7 @@
 
 void from_json(const nlohmann::json &j, unixKeyConfigJson &c) {
   j.at("undo_key").get_to(c.undoKey);
+  j.at("undo_reset").get_to(c.undoReset);
   j.at("case_sensitive").get_to(c.caseSensitive);
   j.at("case_insensitive").get_to(c.caseInsensitive);
 }
@@ -13,10 +14,11 @@ void from_json(const nlohmann::json &j, unixKeyConfigJson &c) {
 void to_json(nlohmann::json &j, const unixKeyConfigJson &c) {
   j = nlohmann::json{{"case_sensitive", c.caseSensitive},
                      {"case_insensitive", c.caseInsensitive},
-                     {"undo_key", c.undoKey}};
+                     {"undo_key", c.undoKey},
+                     {"undo_reset", c.undoReset}};
 }
 
-unixKeyConfig::unixKeyConfig(std::string file) {
+unixKeyConfig::unixKeyConfig(const std::string &file) {
   // convert to raw json object
   std::ifstream in(file);
   nlohmann::json j = nlohmann::json::parse(in);
@@ -44,7 +46,6 @@ unixKeyConfig::unixKeyConfig(std::string file) {
               return a.from.size() > b.from.size();
             });
 
-  // TODO: might not work
   undoKey = fcitx::KeySym(jsonConfig.undoKey);
-  debug = false;
+  undoReset = jsonConfig.undoReset;
 }

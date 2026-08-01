@@ -12,7 +12,6 @@ struct replacementRequest {
   std::string replacement;
 };
 
-// TODO: implement lastReplacement
 class Matcher {
 public:
   Matcher(unixKeyConfig c);
@@ -25,12 +24,18 @@ public:
   // Simulates a backspace (updates the state of the matcher but will never
   // result in a match (at least i think and hope so))
   void backspace();
-  std::optional<replacementRequest> lastReplacement;
+  std::optional<replacementRequest> lastReplacement() {
+    return lastReplacement_;
+  };
 
   void reset() {
     currentReplacement_ = std::nullopt;
-    lastReplacement = std::nullopt;
     currentMatch_ = "";
+  }
+
+  void resetLastReplacement() {
+    lastReplacement_ = std::nullopt;
+    insertionsSinceLastReplacement = 0;
   }
 
 private:
@@ -38,12 +43,8 @@ private:
   std::string currentMatch_ = "";
   std::optional<replacement> currentReplacement_ = std::nullopt;
   bool getLongestSubstitution(std::string string);
-
-  void debug(std::string message) {
-    if (config_.debug) {
-      FCITX_INFO() << message;
-    }
-  };
+  std::optional<replacementRequest> lastReplacement_;
+  int insertionsSinceLastReplacement = 0;
 };
 
 #endif // _UNIXKEY_MATCHER_H_

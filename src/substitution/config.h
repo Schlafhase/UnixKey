@@ -12,15 +12,16 @@ public:
   std::vector<replacement> replacements;
   // Will log more data but may include sensitive data (like every single
   // keypress)
-  bool debug;
   FcitxKeySym undoKey;
+  int undoReset;
 
-  unixKeyConfig(std::string file);
+  unixKeyConfig(const std::string &file);
 };
 
 struct unixKeyConfigJson {
   std::unordered_map<std::string, std::string> caseSensitive;
   std::unordered_map<std::string, std::string> caseInsensitive;
   int undoKey;
+  int undoReset;
 };
 #endif // _UNIXKEY_CONFIG_H
