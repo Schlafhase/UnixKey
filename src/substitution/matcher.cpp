@@ -152,6 +152,15 @@ void Matcher::backspace() {
   if (!currentMatch_.empty()) {
     currentMatch_.pop_back();
   }
+  if (lastReplacement_.has_value()) {
+    if (insertionsSinceLastReplacement <= 0) {
+      resetLastReplacement();
+    } else {
+      lastReplacement_->match.pop_back();
+      lastReplacement_->replacement.pop_back();
+      insertionsSinceLastReplacement--;
+    }
+  }
 }
 
 static bool matchToEnd(const std::string &a, const std::string &b,

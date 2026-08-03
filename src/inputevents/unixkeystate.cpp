@@ -63,7 +63,8 @@ int countGraphemeClusters(const std::string &input) {
 }
 
 void UnixKeyState::apply(const replacementRequest &request) {
-  for (int i = 0; i < countGraphemeClusters(request.match); i++) {
+  int length = countGraphemeClusters(request.match);
+  for (int i = 0; i < length; i++) {
     ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
   }
   timer_ = engine_->instance()->eventLoop().addTimeEvent(
