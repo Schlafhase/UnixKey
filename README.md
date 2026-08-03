@@ -190,7 +190,7 @@ you want. UnixKey has a solution for this. You can set the replacement to
     "true": "UNIXKEY_PRESERVE",
     "blue": "UNIXKEY_PRESERVE",
     "value": "UNIXKEY_PRESERVE",
-    "que": "UNIXKEY_PRESERVE", // in many cases even small segments like this one are enough (since qü never appears in german but quite often in english)
+    "que": "UNIXKEY_PRESERVE", // in many cases even small segments like this one are enough (since "qü" never appears in german but "que" quite often in english)
     "queue": "UNIXKEY_PRESERVE",
     "does": "UNIXKEY_PRESERVE"
   }
