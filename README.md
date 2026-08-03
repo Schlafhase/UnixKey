@@ -138,7 +138,7 @@ want to be able to type lowercase and uppercase variants:
 
 And you have probably guessed it, There is also a "case_insensitive" ruleset
 which doesn't care about case. Let's put the ß in there because it doesn't have
-a case. It's also great for little macros like [email] which can expand to you
+a case. It's also great for little macros like [email] which can expand to your
 email address.
 
 ```json
