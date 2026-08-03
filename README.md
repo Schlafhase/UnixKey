@@ -199,5 +199,5 @@ you want. UnixKey has a solution for this. You can set the replacement to
 
 You might think that you will have to put the whole english dictionary in there
 but from my experience, even the small list of words to preserve in the config
-above are enough to have a pretty consistent typing experience without
+above is enough to have a pretty consistent typing experience without
 unexpected replacements (at least with English and German).
