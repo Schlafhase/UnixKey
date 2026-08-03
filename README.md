@@ -110,7 +110,7 @@ I'll start by setting the undo settings:
 }
 ```
 
-These two values where explained in detail already, so I'll just continue to the
+These two values were explained in detail already, so I'll just continue to the
 actual replacement rules. First, we have the "case_sensitive" ruleset. As the
 name suggests, these rules are **case sensitive** which means that they will
 only trigger when the pattern is typed EXACTLY like in the config file.
@@ -197,6 +197,7 @@ you want. UnixKey has a solution for this. You can set the replacement to
 }
 ```
 
-You might think that you will have to put the whole english dictionary in there but
-from my experience, even the small list of words to preserve in the config above
-are enough to have a pretty consistent typing experience without unexpected replacements (at least with English and German).
+You might think that you will have to put the whole english dictionary in there
+but from my experience, even the small list of words to preserve in the config
+above are enough to have a pretty consistent typing experience without
+unexpected replacements (at least with English and German).
