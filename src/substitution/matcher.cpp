@@ -55,6 +55,23 @@ std::optional<replacementRequest>
 Matcher::updateMatch(std::string const &additionalInput) {
   DEBUG_LOG("additionalInput: " + additionalInput);
 
+  if (!additionalInput.empty()) {
+
+    if (lastReplacement_.has_value()) {
+      if (insertionsSinceLastReplacement >= config_.undoReset) {
+        DEBUG_LOG(
+            "exceeded undo reset config value, resetting lastreplacement");
+        resetLastReplacement();
+      } else {
+        DEBUG_LOG("appending additional input to last replacement");
+        lastReplacement_->match += additionalInput;
+        lastReplacement_->replacement += additionalInput;
+        insertionsSinceLastReplacement++;
+        DEBUG_LOG("last replacement match: " + lastReplacement_->match);
+      }
+    }
+  }
+
   // engine is not trying to match a replacement at this point so try to find if
   // it should start matching. If currentReplacement_ is NULL, currentMatch_
   // SHOULD be empty (let's pray that it is :D)
@@ -79,23 +96,6 @@ Matcher::updateMatch(std::string const &additionalInput) {
       currentReplacement_->from.substr(currentMatch_.size());
 
   DEBUG_LOG("expecting: " + expectedAdditional);
-
-  if (!additionalInput.empty()) {
-
-    if (lastReplacement_.has_value()) {
-      if (insertionsSinceLastReplacement >= config_.undoReset) {
-        DEBUG_LOG(
-            "exceeded undo reset config value, resetting lastreplacement");
-        resetLastReplacement();
-      } else {
-        DEBUG_LOG("appending additional input to last replacement");
-        lastReplacement_->match += additionalInput;
-        lastReplacement_->replacement += additionalInput;
-        insertionsSinceLastReplacement++;
-        DEBUG_LOG("last replacement match: " + lastReplacement_->match);
-      }
-    }
-  }
 
   // check if the tihngs match 👍
   for (size_t i = 0; i < additionalInput.size(); i++) {

@@ -95,9 +95,12 @@ void UnixKeyState::apply(const replacementRequest &request) {
 // TODO: add logic that queues keypresses when old text is currently being
 // deleted
 void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
-  FCITX_INFO() << keyEvent.key().states();
-  if (keyEvent.key().check(config_.undoKey) &&
-      keyEvent.key().states().test(config_.undoModifier) &&
+  // TODO: not set to any states for some reason
+  FCITX_INFO() << keyEvent.origKey().states();
+  FCITX_INFO() << keyEvent.key().sym();
+  if (keyEvent.key().sym() == config_.undoKey &&
+    keyEvent.origKey().states().test(config_.undoModifier)
+     &&
       !keyEvent.isRelease()) {
     auto lr = matcher_.lastReplacement();
     if (lr.has_value()) {
