@@ -26,6 +26,7 @@
     "[alpha]": "α",
     "[pwd]": "UNIXKEY_CMD GEN_PASSWORD=\"$(cat /dev/urandom | tr -dc 'a-z-A-Z0-9\"@_?$^!#' | head -c 16)\" && wl-copy $GEN_PASSWORD && echo -n $GEN_PASSWORD",
     "[date]": "UNIXKEY_CMD date | perl -pe 'chomp if eof'",
+    "[fortune]": "UNIXKEY_CMD fortune | cowsay",
     "ss'": "ß",
     "true": "UNIXKEY_PRESERVE",
     "blue": "UNIXKEY_PRESERVE",

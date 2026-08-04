@@ -9,6 +9,9 @@ letters. With a few more rules, you can even exclude common English-only
 segments (like "que") so you can still type most English words too. Obviously,
 UnixKey also let's you undo a replacement by pressing a key you can configure.
 
+It is inspired by [Timwis UniKey](https://github.com/Timwi/UniKey) which is a similar
+program for Windows.
+
 ## Quick Start
 
 > [!WARNING]
