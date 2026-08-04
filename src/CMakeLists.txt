@@ -5,9 +5,9 @@ set_target_properties(unixkey PROPERTIES PREFIX "")
 install(TARGETS unixkey DESTINATION "${FCITX_INSTALL_LIBDIR}/fcitx5")
 
 add_subdirectory(inputevents)
-add_subdirectory(test)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_subdirectory(test)
   target_compile_definitions(unixkey PRIVATE ENABLE_DEBUG_LOGS)
   target_compile_definitions(UnixKeyTest PRIVATE ENABLE_DEBUG_LOGS)
 endif()

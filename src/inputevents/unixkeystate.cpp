@@ -56,15 +56,15 @@ void UnixKeyState::updateUI() {
   ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
 }
 
-int countGraphemeClusters(const std::string &input) {
+size_t countGraphemeClusters(const std::string &input) {
   UErrorCode status = U_ZERO_ERROR;
-  icu::UnicodeString ustr = icu::UnicodeString::fromUTF8(input);
+  icu::UnicodeString const ustr = icu::UnicodeString::fromUTF8(input);
 
   std::unique_ptr<icu::BreakIterator> it(
       icu::BreakIterator::createCharacterInstance(icu::Locale::getDefault(),
                                                   status));
 
-  if (U_FAILURE(status)) {
+  if (U_FAILURE(status) != 0) {
     return -1;
   }
 
@@ -79,12 +79,13 @@ int countGraphemeClusters(const std::string &input) {
 }
 
 void UnixKeyState::apply(const replacementRequest &request) {
-  int length = countGraphemeClusters(request.match);
-  for (int i = 0; i < length; i++) {
+  size_t const length = countGraphemeClusters(request.match);
+  for (size_t i = 0; i < length; i++) {
     ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
   }
   timer_ = engine_->instance()->eventLoop().addTimeEvent(
-      CLOCK_MONOTONIC, fcitx::now(CLOCK_MONOTONIC) + 5000, 0,
+      CLOCK_MONOTONIC, fcitx::now(CLOCK_MONOTONIC) + 5000,
+      0, // 5000 microseconds or 5ms
       [this, request](fcitx::EventSourceTime *, unsigned long) {
         ic_->commitString(request.replacement);
         return false;
@@ -94,24 +95,30 @@ void UnixKeyState::apply(const replacementRequest &request) {
 // TODO: add logic that queues keypresses when old text is currently being
 // deleted
 void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
-  if (keyEvent.key().check(config_.undoKey) && !keyEvent.isRelease()) {
+  FCITX_INFO() << keyEvent.key().states();
+  if (keyEvent.key().check(config_.undoKey) &&
+      keyEvent.key().states().test(config_.undoModifier) &&
+      !keyEvent.isRelease()) {
     auto lr = matcher_.lastReplacement();
     if (lr.has_value()) {
       apply(*lr);
       matcher_.resetLastReplacement();
       matcher_.reset();
-      return keyEvent.filterAndAccept();
+      keyEvent.filterAndAccept();
+      return;
     }
   }
 
   ic_->forwardKey(keyEvent.key());
 
-  if (keyEvent.isRelease() || keyEvent.key().states()) {
-    return keyEvent.filterAndAccept();
+  if (keyEvent.isRelease() || (keyEvent.key().states() != 0U)) {
+    keyEvent.filterAndAccept();
+    return;
   }
   if (keyEvent.key().check(FcitxKey_BackSpace)) {
     matcher_.backspace();
-    return keyEvent.filterAndAccept();
+    keyEvent.filterAndAccept();
+    return;
   }
 
   // just reset matcher on these ones (i might add handling for them later but
@@ -123,16 +130,23 @@ void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
       keyEvent.key().check(FcitxKey_Up)) {
     matcher_.reset();
     matcher_.resetLastReplacement();
-    return keyEvent.filterAndAccept();
+    keyEvent.filterAndAccept();
+    return;
   }
 
-  std::optional<replacementRequest> request =
-      matcher_.updateMatch(fcitx::Key::keySymToUTF8(keyEvent.key().sym()));
+  std::string const input = fcitx::Key::keySymToUTF8(keyEvent.key().sym());
+
+  if (input.empty()) {
+    keyEvent.filterAndAccept();
+    return;
+  }
+
+  std::optional<replacementRequest> request = matcher_.updateMatch(input);
   if (request.has_value()) {
     apply(request.value());
   }
 
   updateUI();
 
-  return keyEvent.filterAndAccept();
+  keyEvent.filterAndAccept();
 }

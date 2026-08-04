@@ -34,11 +34,11 @@ replacementRequest buildRequest(const std::string &from,
   std::string replacement = to;
   if (to == "UNIXKEY_PRESERVE") {
     return {"", ""};
-  } else {
-    if (currentInputValue.size() > from.size()) {
-      replacement += currentInputValue.substr(from.size());
-    }
   }
+  if (currentInputValue.size() > from.size()) {
+    replacement += currentInputValue.substr(from.size());
+  }
+
   replacementRequest result{.match = currentInputValue,
                             .replacement = replacement};
   DEBUG_LOG("applying");
@@ -48,24 +48,12 @@ replacementRequest buildRequest(const std::string &from,
 }
 
 Matcher::Matcher(unixKeyConfig c) : config_(std::move(c)) {}
-Matcher::Matcher(std::string replacementFile) : config_(replacementFile) {}
+Matcher::Matcher(std::string const &replacementFile)
+    : config_(replacementFile) {}
 
 std::optional<replacementRequest>
-Matcher::updateMatch(std::string additionalInput) {
+Matcher::updateMatch(std::string const &additionalInput) {
   DEBUG_LOG("additionalInput: " + additionalInput);
-
-  if (lastReplacement_.has_value()) {
-    if (insertionsSinceLastReplacement >= config_.undoReset) {
-      DEBUG_LOG("exceeded undo reset config value, resetting lastreplacement");
-      resetLastReplacement();
-    } else {
-      DEBUG_LOG("appending additional input to last replacement");
-      lastReplacement_->match += additionalInput;
-      lastReplacement_->replacement += additionalInput;
-      insertionsSinceLastReplacement++;
-      DEBUG_LOG("last replacement match: " + lastReplacement_->match);
-    }
-  }
 
   // engine is not trying to match a replacement at this point so try to find if
   // it should start matching. If currentReplacement_ is NULL, currentMatch_
@@ -92,16 +80,33 @@ Matcher::updateMatch(std::string additionalInput) {
 
   DEBUG_LOG("expecting: " + expectedAdditional);
 
+  if (!additionalInput.empty()) {
+
+    if (lastReplacement_.has_value()) {
+      if (insertionsSinceLastReplacement >= config_.undoReset) {
+        DEBUG_LOG(
+            "exceeded undo reset config value, resetting lastreplacement");
+        resetLastReplacement();
+      } else {
+        DEBUG_LOG("appending additional input to last replacement");
+        lastReplacement_->match += additionalInput;
+        lastReplacement_->replacement += additionalInput;
+        insertionsSinceLastReplacement++;
+        DEBUG_LOG("last replacement match: " + lastReplacement_->match);
+      }
+    }
+  }
+
   // check if the tihngs match 👍
   for (size_t i = 0; i < additionalInput.size(); i++) {
-    char c = additionalInput[i];
+    char const c = additionalInput[i];
     if (i >= expectedAdditional.size()) {
       // this should mean that the replacement was completed without a
       // mismatch
       break;
     }
-    char expected = expectedAdditional[i];
-    bool match;
+    char const expected = expectedAdditional[i];
+    bool match = false;
     if (currentReplacement_->caseSensitive) {
       match = c == expected;
     } else {
@@ -130,12 +135,11 @@ Matcher::updateMatch(std::string additionalInput) {
         }
         // otherwise just return NULL and continue
         return std::nullopt;
-      } else {
-        // current match didn't match anymore and no new one could be found :(((
-        // need to reset stuff
-        reset();
-        return std::nullopt;
       }
+      // current match didn't match anymore and no new one could be found :(((
+      // need to reset stuff
+      reset();
+      return std::nullopt;
     }
     // if the character was expected:
     currentMatch_ += c;
@@ -148,7 +152,7 @@ Matcher::updateMatch(std::string additionalInput) {
                    compareString.begin(), ::tolower);
   }
   if (compareString.starts_with(currentReplacement_->from)) {
-    bool preserve = currentReplacement_->to == "UNIXKEY_PRESERVE";
+    bool const preserve = currentReplacement_->to == "UNIXKEY_PRESERVE";
     replacementRequest request = buildRequest(
         currentReplacement_->from, newInput, currentReplacement_->to);
     reset();
@@ -200,10 +204,10 @@ static bool matchToEnd(const std::string &a, const std::string &b,
 
 // given a string, checks what substitution should be expected (longest
 // first). returns true if a match was found, false otherwise
-bool Matcher::getLongestSubstitution(std::string string) {
+bool Matcher::getLongestSubstitution(std::string const &string) {
   // prioritise matches that start early
   for (size_t i = 0; i < string.size(); i++) {
-    std::string substring = string.substr(i);
+    std::string const substring = string.substr(i);
     // start with longest first
     for (const replacement &r : config_.replacements) {
       // they have to match up to the end of either string (maybe?? thisis

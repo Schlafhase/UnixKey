@@ -18,6 +18,7 @@
 #include "unixkeystate.h"
 #include <Fcitx5/Module/fcitx-module/punctuation/punctuation_public.h>
 #include <Fcitx5/Module/fcitx-module/quickphrase/quickphrase_public.h>
+#include <cstdlib>
 #include <fcitx-utils/capabilityflags.h>
 #include <fcitx-utils/cutf8.h>
 #include <fcitx-utils/event.h>
@@ -40,6 +41,7 @@
 #include <fcitx/userinterfacemanager.h>
 #include <iconv.h>
 #include <nlohmann/json_fwd.hpp>
+#include <pwd.h>
 #include <string>
 #include <unicode/brkiter.h>
 #include <unicode/unistr.h>
@@ -48,8 +50,17 @@
 
 UnixKeyEngine::UnixKeyEngine(fcitx::Instance *instance)
     : instance_(instance), factory_([this](fcitx::InputContext &ic) {
-        return new UnixKeyState(
-            this, &ic, unixKeyConfig{"/home/Linus/.config/unixkey.json"});
+        std::string home;
+        char const *const homePtr = getenv("HOME");
+        if (homePtr != NULL) {
+          home = homePtr;
+        } else {
+          home = getpwuid(getuid())->pw_dir;
+        }
+
+        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+        return new UnixKeyState(this, &ic,
+                                unixKeyConfig{home + "/.config/unixkey.json"});
       }) {
   instance->inputContextManager().registerProperty("unixkeyState", &factory_);
 }
@@ -63,19 +74,16 @@ void UnixKeyEngine::activate(const fcitx::InputMethodEntry &entry,
 void UnixKeyEngine::keyEvent(const fcitx::InputMethodEntry &entry,
                              fcitx::KeyEvent &keyEvent) {
   FCITX_UNUSED(entry);
-  if (keyEvent.isRelease() || keyEvent.key().states()) {
+  if (keyEvent.isRelease() || (keyEvent.key().states() != 0U)) {
     return;
   }
-  auto ic = keyEvent.inputContext();
+  auto *ic = keyEvent.inputContext();
   auto *state = ic->propertyFor(&factory_);
   state->keyEvent(keyEvent);
 }
 
-void UnixKeyEngine::reset(const fcitx::InputMethodEntry &,
-                          fcitx::InputContextEvent &event) {
-  FCITX_UNUSED(event);
-  // auto *state = event.inputContext()->propertyFor(&factory_);
-  // state->reset();
+void UnixKeyEngine::reset(const fcitx::InputMethodEntry & /*entry*/,
+                          fcitx::InputContextEvent & /*event*/) {
 }
 
 FCITX_ADDON_FACTORY(UnixKeyEngineFactory)

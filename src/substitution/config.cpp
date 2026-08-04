@@ -16,6 +16,7 @@
 
 #include "config.h"
 #include <fcitx-utils/key.h>
+#include <fcitx-utils/keysym.h>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
@@ -23,6 +24,7 @@
 void from_json(const nlohmann::json &j, unixKeyConfigJson &c) {
   j.at("undo_key").get_to(c.undoKey);
   j.at("undo_reset").get_to(c.undoReset);
+  j.at("undo_modifier").get_to(c.undoModifier);
   j.at("case_sensitive").get_to(c.caseSensitive);
   j.at("case_insensitive").get_to(c.caseInsensitive);
 }
@@ -31,21 +33,22 @@ void to_json(nlohmann::json &j, const unixKeyConfigJson &c) {
   j = nlohmann::json{{"case_sensitive", c.caseSensitive},
                      {"case_insensitive", c.caseInsensitive},
                      {"undo_key", c.undoKey},
-                     {"undo_reset", c.undoReset}};
+                     {"undo_reset", c.undoReset},
+                     {"undo_modifier", c.undoModifier}};
 }
 
-unixKeyConfig::unixKeyConfig(const std::string &file) {
+unixKeyConfig::unixKeyConfig(const std::string &file) : replacements({}) {
   // convert to raw json object
   std::ifstream in(file);
-  nlohmann::json j = nlohmann::json::parse(in);
+  nlohmann::json const j = nlohmann::json::parse(in);
 
-  unixKeyConfigJson jsonConfig = j.get<unixKeyConfigJson>();
+  unixKeyConfigJson const jsonConfig = j.get<unixKeyConfigJson>();
 
   // now convert the raw json objects to actual config
 
-  replacements = {};
+  
   for (const auto &[key, value] : jsonConfig.caseSensitive) {
-    std::string keyLower = key;
+    std::string const keyLower = key;
     replacements.push_back({keyLower, value, true});
   }
   for (const auto &[key, value] : jsonConfig.caseInsensitive) {
@@ -63,5 +66,6 @@ unixKeyConfig::unixKeyConfig(const std::string &file) {
             });
 
   undoKey = fcitx::KeySym(jsonConfig.undoKey);
+  undoModifier = fcitx::KeyState(jsonConfig.undoModifier);
   undoReset = jsonConfig.undoReset;
 }

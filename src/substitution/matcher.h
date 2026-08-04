@@ -31,12 +31,12 @@ struct replacementRequest {
 class Matcher {
 public:
   Matcher(unixKeyConfig c);
-  Matcher(std::string replacementFile);
+  Matcher(std::string const &replacementFile);
   // Appends currentMatch_ with additionalInput and updates the private
   // fields correspondingly. If no match was found it returns an
   // applyReplacement which contains necessary information to apply a
   // substitution. Otherwise NULL is returned.
-  std::optional<replacementRequest> updateMatch(std::string additionalInput);
+  std::optional<replacementRequest> updateMatch(std::string const &additionalInput);
   // Simulates a backspace (updates the state of the matcher but will never
   // result in a match (at least i think and hope so))
   void backspace();
@@ -56,9 +56,9 @@ public:
 
 private:
   unixKeyConfig config_;
-  std::string currentMatch_ = "";
+  std::string currentMatch_;
   std::optional<replacement> currentReplacement_ = std::nullopt;
-  bool getLongestSubstitution(std::string string);
+  bool getLongestSubstitution(std::string const &string);
   std::optional<replacementRequest> lastReplacement_;
   int insertionsSinceLastReplacement = 0;
 };

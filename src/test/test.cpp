@@ -17,12 +17,20 @@
 #include "../substitution/matcher.h"
 #include <fcitx-utils/log.h>
 #include <iostream>
+#include <pwd.h>
 #include <string>
 
 int main() {
-  Matcher matcher{"/home/Linus/.config/unixkey.json"};
+  std::string home;
+  char const *const homePtr = getenv("HOME");
+  if (homePtr != NULL) {
+    home = homePtr;
+  } else {
+    home = getpwuid(getuid())->pw_dir;
+  }
+  Matcher matcher{home + "/.config/unixkey.json"};
   std::string line;
-  while (1) {
+  while (true) {
     std::getline(std::cin, line);
     matcher.updateMatch(line);
   }

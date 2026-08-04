@@ -3,24 +3,37 @@
 UnixKey is a project that aims to make inputting arbitrary Unicode characters
 using an English keyboard layout easier. This is especially useful if English is
 not your native language. Take German for example: German words often contain ä,
-ü, ö or ß. UnixKey allows you to set up rules to just type ae, ue, oe or ss'
-which will then automatically get converted to the corresponding German letters.
-With a few more rules, you can even exclude common English-only segments (like
-"que") so you can still type most English words too. Obviously, UnixKey also
-let's you undo a replacement by pressing a key you can configure.
+ü, ö or ß. UnixKey allows you to set up rules so that you just type ae, ue, oe
+or ss' which will then automatically get converted to the corresponding German
+letters. With a few more rules, you can even exclude common English-only
+segments (like "que") so you can still type most English words too. Obviously,
+UnixKey also let's you undo a replacement by pressing a key you can configure.
 
-## Installation / Quick Start
+## Quick Start
 
-> [!NOTE]
+> [!WARNING]
 >
-> **Dependencies**: fcitx5, cmake, ninja or make, libicu, C++ compiler
+> Unless you trust me completely for some reason, please make absolutely sure to
+> **check the content** of `install.sh` before running the command below.
+
+You can run the installer using
+`sh -c "$(curl -fsSL https://github.com/Schlafhase/UnixKey/raw/refs/heads/master/install.sh)"`.
+It will ask you for your `sudo` password because it has to move files to
+/usr/lib/fcitx5/ and /usr/share/fcitx5/ which the user shouldn't have permission
+to do.
+
+You can also install UnixKey manually for more control.
+
+### Manual Installation
+
+**Dependencies**: fcitx5, cmake, ninja or make, libicu, C++ compiler
 
 Start by installing UnixKey:
 
 > [!NOTE]
 >
 > If you know what you're doing, you can replace /usr with another install
-> prefix. This isn't necessary in most cases though.
+> prefix. In most cases, this isn't necessary and will break the installation.
 
 ```sh
 git clone https://github.com/Schlafhase/UnixKey .
@@ -57,6 +70,8 @@ To uninstall UnixKey, just remove the installed files
 sudo rm /usr/share/fcitx5/addon/unixkey.conf
 sudo rm /usr/share/fcitx5/inputmethod/unixkey.conf
 sudo rm /usr/lib/fcitx5/unixkey.so
+# optionally remove the config
+rm ~/.config/unixkey.json
 ```
 
 ## Usage and configuration
@@ -86,6 +101,36 @@ integer that represents the keycode.
 >   The codes are in hex so you need to convert them to decimal before putting
 >   them into your configuration.
 
+You can also add modifiers to the key using the `"undo_modifiers"` property in
+the configuration file. The value is a number. Below is a table of all
+modifiers:
+
+| Modifier                                         | Value      |
+| ------------------------------------------------ | ---------- |
+| No modifier                                      | 0          |
+| Shift                                            | 1          |
+| CapsLock                                         | 2          |
+| Ctrl                                             | 4          |
+| Alt                                              | 8          |
+| NumLock                                          | 16         |
+| Hyper                                            | 32         |
+| Super                                            | 64         |
+| Mod5                                             | 128        |
+| MousePressed                                     | 256        |
+| Meta                                             | 268435456  |
+| Repeat (when the key was held and gets repeated) | 2147483648 |
+
+> [!NOTE]
+>
+> You can combine multiple modifiers by adding their values together
+> (technically you are performing a bitwise or). Common combinations are:
+>
+> - **Alt + Shift**: 8 + 1 = 9
+> - **Ctrl + Shift**: 4 + 1 = 5
+> - **Allow all modifiers**: 4294967295 (just all bits set to 1 on the 32-bit
+>   integer)
+> - and so on...
+
 The second thing about undoing that can be configured is how long the last
 replacement should be remembered (`"undo_reset"` in `unixkey.json`). A value of
 5 means: After the replacement was made, 5 more insertions (usually single key
@@ -106,6 +151,7 @@ I'll start by setting the undo settings:
 ```json
 {
   "undo_key": 65307, // escape key (i know json doesn't have comments but i don't care)
+  "undo_modifier": 1, // with shift modifier in case I want to use the escape key without undoing
   "undo_reset": 5
 }
 ```
@@ -121,6 +167,7 @@ want to be able to type lowercase and uppercase variants:
 ```json
 {
   "undo_key": 65307,
+  "undo_modifier": 1,
   "undo_reset": 5,
   "case_sensitive": {
     "ae": "ä",
@@ -144,6 +191,7 @@ email address.
 ```json
 {
   "undo_key": 65307,
+  "undo_modifier": 1,
   "undo_reset": 5,
   "case_sensitive": {
     "ae": "ä",
@@ -172,6 +220,7 @@ you want. UnixKey has a solution for this. You can set the replacement to
 ```json
 {
   "undo_key": 65307,
+  "undo_modifier": 1,
   "undo_reset": 5,
   "case_sensitive": {
     "ae": "ä",
@@ -199,5 +248,8 @@ you want. UnixKey has a solution for this. You can set the replacement to
 
 You might think that you will have to put the whole english dictionary in there
 but from my experience, even the small list of words to preserve in the config
-above is enough to have a pretty consistent typing experience without
-unexpected replacements (at least with English and German).
+above is enough to have a pretty consistent typing experience without unexpected
+replacements (at least with English and German).
+
+## How it works
+
