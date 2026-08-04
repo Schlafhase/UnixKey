@@ -49,18 +49,30 @@
 #include <unistd.h>
 
 UnixKeyEngine::UnixKeyEngine(fcitx::Instance *instance)
-    : instance_(instance), factory_([this](fcitx::InputContext &ic) {
+    : instance_(instance),
+      factory_([this](fcitx::InputContext &ic) -> UnixKeyState * {
         std::string home;
         char const *const homePtr = getenv("HOME");
-        if (homePtr != NULL) {
+        if (homePtr != nullptr) {
           home = homePtr;
         } else {
           home = getpwuid(getuid())->pw_dir;
         }
 
-        // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
-        return new UnixKeyState(this, &ic,
-                                unixKeyConfig{home + "/.config/unixkey.json"});
+        try {
+
+          // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
+          return new UnixKeyState(
+              this, &ic, unixKeyConfig{home + "/.config/unixkey.json"});
+        } catch (nlohmann::json::exception &e) {
+          std::string error = e.what();
+          FCITX_ERROR() << error;
+          return new UnixKeyState(
+              this, &ic,
+              unixKeyConfig::errorConfig("An error has occured while parsing "
+                                         "the UnixKey configuration:\n" +
+                                         error + "\n\nRefer to the README at https://github.com/Schlafhase/UnixKey for configuration help."));
+        }
       }) {
   instance->inputContextManager().registerProperty("unixkeyState", &factory_);
 }
@@ -83,7 +95,6 @@ void UnixKeyEngine::keyEvent(const fcitx::InputMethodEntry &entry,
 }
 
 void UnixKeyEngine::reset(const fcitx::InputMethodEntry & /*entry*/,
-                          fcitx::InputContextEvent & /*event*/) {
-}
+                          fcitx::InputContextEvent & /*event*/) {}
 
 FCITX_ADDON_FACTORY(UnixKeyEngineFactory)

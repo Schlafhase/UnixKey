@@ -1,16 +1,17 @@
 # UnixKey
 
-UnixKey is a project that aims to make inputting arbitrary Unicode characters
-using an English keyboard layout easier. This is especially useful if English is
-not your native language. Take German for example: German words often contain ä,
-ü, ö or ß. UnixKey allows you to set up rules so that you just type ae, ue, oe
-or ss' which will then automatically get converted to the corresponding German
-letters. With a few more rules, you can even exclude common English-only
-segments (like "que") so you can still type most English words too. Obviously,
-UnixKey also let's you undo a replacement by pressing a key you can configure.
+UnixKey is an fcitx5 input method that aims to make inputting arbitrary Unicode
+characters using an English keyboard layout easier. This is especially useful if
+English is not your native language. Take German for example: German words often
+contain ä, ü, ö or ß. UnixKey allows you to set up rules so that you just type
+ae, ue, oe or ss' which will then automatically get converted to the
+corresponding German letters. With a few more rules, you can even exclude common
+English-only segments (like "que") so you can still type most English words too.
+Obviously, UnixKey also let's you undo a replacement by pressing a key you can
+configure.
 
-It is inspired by [Timwis UniKey](https://github.com/Timwi/UniKey) which is a similar
-program for Windows.
+It is inspired by [Timwis UniKey](https://github.com/Timwi/UniKey) which is a
+similar program for Windows.
 
 ## Quick Start
 
@@ -79,6 +80,12 @@ rm ~/.config/unixkey.json
 
 ## Usage and configuration
 
+> [!NOTE]
+>
+> Everytime your configuration doesn't work or UnixKey doesn't behave as
+> expected, you can type \[help\] in any input window which will expand to a
+> (hopefully helpful) error message.
+
 The way you use UnixKey really depends on your configuration. But before going
 more in depth about configuring, I'll explain basic usage.
 
@@ -142,7 +149,7 @@ this to a very high value to basically be able to undo whenever you like but I
 think that low values make more sense here. This is because undoing a
 replacement that happened potentially hundreds of characters before the cursor
 is basically never intentional. Higher values will also make you unable to use
-the specified key for anything else during the time, the last replacement is
+the specified key for anything else during the time the last replacement is
 remembered.
 
 ### Making an own configuration
@@ -159,9 +166,9 @@ I'll start by setting the undo settings:
 }
 ```
 
-These two values were explained in detail already, so I'll just continue to the
-actual replacement rules. First, we have the "case_sensitive" ruleset. As the
-name suggests, these rules are **case sensitive** which means that they will
+These three values were explained in detail already, so I'll just continue to
+the actual replacement rules. First, we have the "case_sensitive" ruleset. As
+the name suggests, these rules are **case sensitive** which means that they will
 only trigger when the pattern is typed EXACTLY like in the config file.
 
 For my German-letter configuration, this should include the umlauts because I
@@ -250,9 +257,9 @@ you want. UnixKey has a solution for this. You can set the replacement to
 ```
 
 You might think that you will have to put the whole english dictionary in there
-but from my experience, even the small list of words to preserve in the example config
-at `src/unixkey.json` is enough to have a pretty consistent typing experience without unexpected
-replacements (at least with English and German).
+but from my experience, even the small list of words to preserve in the example
+config at `src/unixkey.json` is enough to have a pretty consistent typing
+experience without unexpected replacements (at least with English and German).
 
 ### Advanced configuration
 

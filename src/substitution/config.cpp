@@ -15,57 +15,74 @@
 // along with this program in LICENSE.txt.
 
 #include "config.h"
+#include "replacement.h"
+#include <algorithm>
 #include <fcitx-utils/key.h>
 #include <fcitx-utils/keysym.h>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
+#include <unordered_map>
+#include <vector>
 
-void from_json(const nlohmann::json &j, unixKeyConfigJson &c) {
-  j.at("undo_key").get_to(c.undoKey);
-  j.at("undo_reset").get_to(c.undoReset);
-  j.at("undo_modifier").get_to(c.undoModifier);
-  j.at("case_sensitive").get_to(c.caseSensitive);
-  j.at("case_insensitive").get_to(c.caseInsensitive);
+template <typename T>
+static auto getJsonValueOrDefault(nlohmann::json const &j,
+                                  std::string const &key, T const &defaultValue)
+    -> T {
+  try {
+    return j.at(key);
+  } catch (nlohmann::basic_json<>::out_of_range) {
+    return defaultValue;
+  }
 }
 
-void to_json(nlohmann::json &j, const unixKeyConfigJson &c) {
-  j = nlohmann::json{{"case_sensitive", c.caseSensitive},
-                     {"case_insensitive", c.caseInsensitive},
-                     {"undo_key", c.undoKey},
-                     {"undo_reset", c.undoReset},
-                     {"undo_modifier", c.undoModifier}};
+auto unixKeyConfig::errorConfig(std::string const &helpMessage)
+    -> unixKeyConfig {
+  unixKeyConfig c = {};
+
+  c.replacements = {
+      replacement{.from = "[help]", .to = helpMessage, .caseSensitive = false}};
+  return c;
 }
+
+unixKeyConfig::unixKeyConfig()
+    : replacements({}), undoKey(fcitx::KeySym(0)),
+      undoModifier(fcitx::KeyState(0)), undoReset(0) {}
 
 unixKeyConfig::unixKeyConfig(const std::string &file) : replacements({}) {
   // convert to raw json object
   std::ifstream in(file);
   nlohmann::json const j = nlohmann::json::parse(in);
 
-  unixKeyConfigJson const jsonConfig = j.get<unixKeyConfigJson>();
+  undoKey = fcitx::KeySym(getJsonValueOrDefault<int>(j, "undo_key", 0));
+  undoModifier =
+      fcitx::KeyState(getJsonValueOrDefault<int>(j, "undo_modifier", 0));
+  undoReset = getJsonValueOrDefault(j, "undeReset", 15);
 
-  // now convert the raw json objects to actual config
+  auto caseSensitive =
+      getJsonValueOrDefault<std::unordered_map<std::string, std::string>>(
+          j, "case_sensitive", {});
 
-  
-  for (const auto &[key, value] : jsonConfig.caseSensitive) {
+  auto caseInsensitive =
+      getJsonValueOrDefault<std::unordered_map<std::string, std::string>>(
+          j, "case_insensitive", {});
+
+  for (const auto &[key, value] : caseSensitive) {
     std::string const keyLower = key;
-    replacements.push_back({keyLower, value, true});
+    replacements.push_back(
+        {.from = keyLower, .to = value, .caseSensitive = true});
   }
-  for (const auto &[key, value] : jsonConfig.caseInsensitive) {
+  for (const auto &[key, value] : caseInsensitive) {
     std::string keyLower = key;
     // case insensitive stuff can just be lowercased because i don't care
     // about the case
-    std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
-                   ::tolower);
-    replacements.push_back({keyLower, value, false});
+    std::ranges::transform(keyLower, keyLower.begin(), ::tolower);
+    replacements.push_back(
+        {.from = keyLower, .to = value, .caseSensitive = false});
   }
 
-  std::sort(replacements.begin(), replacements.end(),
-            [](const replacement &a, const replacement &b) {
-              return a.from.size() > b.from.size();
-            });
-
-  undoKey = fcitx::KeySym(jsonConfig.undoKey);
-  undoModifier = fcitx::KeyState(jsonConfig.undoModifier);
-  undoReset = jsonConfig.undoReset;
+  std::ranges::sort(replacements,
+                    [](const replacement &a, const replacement &b) -> bool {
+                      return a.from.size() > b.from.size();
+                    });
 }

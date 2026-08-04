@@ -29,7 +29,7 @@
     "[fortune]": "UNIXKEY_CMD fortune | cowsay",
     "ss'": "ß",
     "true": "UNIXKEY_PRESERVE",
-    "blue": "UNIXKEY_PRESERVE",
+    "blue": "UNIXKEY_PRESERVE"
     "value": "UNIXKEY_PRESERVE",
     "does": "UNIXKEY_PRESERVE",
     "que": "UNIXKEY_PRESERVE",

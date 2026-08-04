@@ -26,13 +26,14 @@
 struct unixKeyConfig {
 public:
   std::vector<replacement> replacements;
-  // Will log more data but may include sensitive data (like every single
-  // keypress)
   FcitxKeySym undoKey;
   fcitx::KeyState undoModifier;
   int undoReset;
 
   unixKeyConfig(const std::string &file);
+  unixKeyConfig();
+  // Constructor for errors.
+  static auto errorConfig(std::string const &helpMessage) -> unixKeyConfig;
 };
 
 struct unixKeyConfigJson {
