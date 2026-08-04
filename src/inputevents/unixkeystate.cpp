@@ -56,7 +56,7 @@ void UnixKeyState::updateUI() {
   ic_->updateUserInterface(fcitx::UserInterfaceComponent::InputPanel);
 }
 
-size_t countGraphemeClusters(const std::string &input) {
+auto countGraphemeClusters(const std::string &input) -> size_t {
   UErrorCode status = U_ZERO_ERROR;
   icu::UnicodeString const ustr = icu::UnicodeString::fromUTF8(input);
 
@@ -86,7 +86,7 @@ void UnixKeyState::apply(const replacementRequest &request) {
   timer_ = engine_->instance()->eventLoop().addTimeEvent(
       CLOCK_MONOTONIC, fcitx::now(CLOCK_MONOTONIC) + 5000,
       0, // 5000 microseconds or 5ms
-      [this, request](fcitx::EventSourceTime *, unsigned long) {
+      [this, request](fcitx::EventSourceTime *, unsigned long) -> bool {
         ic_->commitString(request.replacement);
         return false;
       });
@@ -95,12 +95,8 @@ void UnixKeyState::apply(const replacementRequest &request) {
 // TODO: add logic that queues keypresses when old text is currently being
 // deleted
 void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
-  // TODO: not set to any states for some reason
-  FCITX_INFO() << keyEvent.origKey().states();
-  FCITX_INFO() << keyEvent.key().sym();
   if (keyEvent.key().sym() == config_.undoKey &&
-    keyEvent.origKey().states().test(config_.undoModifier)
-     &&
+      keyEvent.origKey().states().test(config_.undoModifier) &&
       !keyEvent.isRelease()) {
     auto lr = matcher_.lastReplacement();
     if (lr.has_value()) {

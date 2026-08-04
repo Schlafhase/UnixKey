@@ -25,6 +25,8 @@
     "queue": "UNIXKEY_PRESERVE",
     "[email]": "me@example.com",
     "[tel]": "+12 34 567890",
-    "[alpha]": "α"
+    "[alpha]": "α",
+    "[pwd]": "UNIXKEY_CMD GEN_PASSWORD=\"$(cat /dev/urandom | tr -dc 'a-z-A-Z0-9\"@_?$^!#' | head -c 16)\" && wl-copy $GEN_PASSWORD && echo -n $GEN_PASSWORD",
+    "[date]": "UNIXKEY_CMD date | perl -pe 'chomp if eof'",
   }
 }

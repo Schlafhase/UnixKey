@@ -19,22 +19,76 @@
 #include "logger.h"
 #include "replacement.h"
 #include <algorithm>
+#include <array>
 #include <cctype>
+#include <cstdio>
 #include <cstdlib>
 #include <fcitx-utils/log.h>
+#include <memory>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <optional>
-#include <stdio.h>
+#include <stdexcept>
 #include <string>
+#include <sys/wait.h>
 
-replacementRequest buildRequest(const std::string &from,
-                                const std::string &currentInputValue,
-                                const std::string &to) {
-  std::string replacement = to;
-  if (to == "UNIXKEY_PRESERVE") {
-    return {"", ""};
+namespace {
+struct PipeCloser {
+  void operator()(FILE *file) const noexcept {
+    if (file != nullptr) {
+      const int status = pclose(file);
+      (void)status;
+    }
   }
+};
+} // namespace
+
+static auto runCmd(const char *cmd) -> std::string {
+  std::array<char, 128> buffer{};
+  std::string result;
+  std::unique_ptr<FILE, PipeCloser> pipe(popen(cmd, "r"));
+  if (!pipe) {
+    throw std::runtime_error("popen() failed");
+  }
+  while (fgets(buffer.data(), static_cast<int>(buffer.size()), pipe.get()) !=
+         nullptr) {
+    result += buffer.data();
+  }
+
+  const int status = pclose(pipe.release());
+  if (status == -1) {
+    throw std::runtime_error("pclose() failed");
+  }
+  if (!WIFEXITED(status)) {
+    throw std::runtime_error("command terminated abnormally");
+  }
+  if (WEXITSTATUS(status) != 0) {
+    throw std::runtime_error("command exited with status " +
+                             std::to_string(WEXITSTATUS(status)));
+  }
+
+  return result;
+}
+
+auto buildRequest(const std::string &from, const std::string &currentInputValue,
+                  const std::string &to) -> replacementRequest {
+  std::string replacement = to;
+  // check special values
+  if (to == "UNIXKEY_PRESERVE") {
+    return {.match = "", .replacement = ""};
+  }
+  if (to.starts_with("UNIXKEY_CMD ")) {
+    std::string cmd = to.substr(12);
+    std::string result;
+    try {
+      result = runCmd(cmd.data());
+    } catch (const std::runtime_error &) {
+      result = "failed to run command";
+    }
+    return {.match = currentInputValue, .replacement = result};
+  }
+
+  // readd additional characters if needed
   if (currentInputValue.size() > from.size()) {
     replacement += currentInputValue.substr(from.size());
   }
@@ -51,8 +105,8 @@ Matcher::Matcher(unixKeyConfig c) : config_(std::move(c)) {}
 Matcher::Matcher(std::string const &replacementFile)
     : config_(replacementFile) {}
 
-std::optional<replacementRequest>
-Matcher::updateMatch(std::string const &additionalInput) {
+auto Matcher::updateMatch(std::string const &additionalInput)
+    -> std::optional<replacementRequest> {
   DEBUG_LOG("additionalInput: " + additionalInput);
 
   if (!additionalInput.empty()) {
@@ -125,8 +179,8 @@ Matcher::updateMatch(std::string const &additionalInput) {
         DEBUG_LOG("new match: " + currentReplacement_->from);
         std::string compareString = currentMatch_;
         if (!currentReplacement_->caseSensitive) {
-          std::transform(compareString.begin(), compareString.end(),
-                         compareString.begin(), ::tolower);
+          std::ranges::transform(compareString, compareString.begin(),
+                                 ::tolower);
         }
         if (compareString.starts_with(currentReplacement_->from)) {
           break;
@@ -148,8 +202,7 @@ Matcher::updateMatch(std::string const &additionalInput) {
   // if the match has been completed apply it
   std::string compareString = currentMatch_;
   if (!currentReplacement_->caseSensitive) {
-    std::transform(compareString.begin(), compareString.end(),
-                   compareString.begin(), ::tolower);
+    std::ranges::transform(compareString, compareString.begin(), ::tolower);
   }
   if (compareString.starts_with(currentReplacement_->from)) {
     bool const preserve = currentReplacement_->to == "UNIXKEY_PRESERVE";
@@ -157,7 +210,8 @@ Matcher::updateMatch(std::string const &additionalInput) {
         currentReplacement_->from, newInput, currentReplacement_->to);
     reset();
     if (!preserve) {
-      lastReplacement_ = {request.replacement, request.match};
+      lastReplacement_ = {.match = request.replacement,
+                          .replacement = request.match};
       DEBUG_LOG("set last replacement: " + lastReplacement_->match + "->" +
                 lastReplacement_->replacement);
     }
@@ -183,11 +237,11 @@ void Matcher::backspace() {
   }
 }
 
-static bool matchToEnd(const std::string &a, const std::string &b,
-                       bool ignoreCase) {
+static auto matchToEnd(const std::string &a, const std::string &b,
+                       bool ignoreCase) -> bool {
   for (size_t i = 0; i < a.size() && i < b.size(); i++) {
-    char ac;
-    char bc;
+    char ac = 0;
+    char bc = 0;
     if (ignoreCase) {
       ac = (char)::tolower(a[i]);
       bc = (char)::tolower(b[i]);
@@ -204,7 +258,7 @@ static bool matchToEnd(const std::string &a, const std::string &b,
 
 // given a string, checks what substitution should be expected (longest
 // first). returns true if a match was found, false otherwise
-bool Matcher::getLongestSubstitution(std::string const &string) {
+auto Matcher::getLongestSubstitution(std::string const &string) -> bool {
   // prioritise matches that start early
   for (size_t i = 0; i < string.size(); i++) {
     std::string const substring = string.substr(i);

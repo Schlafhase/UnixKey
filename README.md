@@ -251,5 +251,23 @@ but from my experience, even the small list of words to preserve in the config
 above is enough to have a pretty consistent typing experience without unexpected
 replacements (at least with English and German).
 
-## How it works
+### Advanced configuration
 
+UnixKey has another special keyword which allows replacing text with the output
+of any command. The following example configuration replaces \[pwd\] with a
+randomly generated password and stores that password in the clipboard.
+
+```json
+{
+  // ...
+  "case_insensitive": {
+    "[pwd]": "UNIXKEY_CMD GEN_PASSWORD=\"$(cat /dev/urandom | tr -dc 'a-z-A-Z0-9\"@_?$^!#' | head -c 16)\" && wl-copy $GEN_PASSWORD && echo -n $GEN_PASSWORD"
+  }
+}
+```
+
+The syntax of this keyword is `UNIXKEY_CMD {cmd}`. Do note that the command will
+block the entire fcitx5 process so avoid running commands that take long because
+you will be unable to type anything for the duration of the command.
+
+## How it works
