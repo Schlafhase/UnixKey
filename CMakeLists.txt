@@ -16,11 +16,11 @@ add_subdirectory(src)
 
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  find_program(IWYU_TOOL_PY iwyu_tool.py)
-  find_program(FIX_INCLUDES_PY fix_includes.py)
+  find_program(IWYU_TOOL_PY iwyu_tool.py HINTS ${CMAKE_SOURCE_DIR}/tools)
+  find_program(FIX_INCLUDES_PY fix_includes.py HINTS ${CMAKE_SOURCE_DIR}/tools)
   if(IWYU_TOOL_PY AND FIX_INCLUDES_PY)
     add_custom_target(fix-includes
-      COMMAND ${IWYU_TOOL_PY} -p ${CMAKE_BINARY_DIR} | ${FIX_INCLUDES_PY} --nosafe_headers --nocomments)
+      COMMAND ${IWYU_TOOL_PY} -p ${CMAKE_BINARY_DIR} | ${FIX_INCLUDES_PY} --nosafe_headers --nocomments
       WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
       VERBATIM USES_TERMINAL
     )

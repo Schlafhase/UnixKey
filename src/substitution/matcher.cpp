@@ -15,21 +15,23 @@
 // along with this program in LICENSE.txt.
 
 #include "matcher.h"
-#include "config.h"
-#include "logger.h"
-#include "replacement.h"
+
+#include <fcitx-utils/log.h>
+#include <fcitx-utils/metastring.h>
 #include <algorithm>
 #include <array>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
-#include <fcitx-utils/log.h>
-#include <fcitx-utils/metastring.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
+
+#include "config.h"
+#include "logger.h"
+#include "replacement.h"
 
 namespace {
 struct PipeCloser {

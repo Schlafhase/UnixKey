@@ -15,16 +15,20 @@
 // along with this program in LICENSE.txt.
 
 #include "config.h"
-#include "replacement.h"
-#include <algorithm>
-#include <cctype>
+
 #include <fcitx-utils/key.h>
-#include <fstream>
-#include <initializer_list>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
+#include <cstdint>
+#include <algorithm>
+#include <cctype>
+#include <fstream>
+#include <initializer_list>
 #include <unordered_map>
 #include <vector>
+
+#include "replacement.h"
+
 namespace fcitx {
 enum class KeyState : uint32_t;
 }

@@ -17,19 +17,20 @@
 #ifndef _FCITX5_UNIXKEYSTATE_H_
 #define _FCITX5_UNIXKEYSTATE_H_
 
-#include "../substitution/matcher.h"
-#include "/home/Linus/Projects/c/UnixKey/src/substitution/config.h"
 #include <fcitx-utils/eventloopinterface.h>
 #include <fcitx/event.h>
 #include <fcitx/inputcontextproperty.h>
 #include <memory>
 #include <vector>
+
+#include "../substitution/matcher.h"
+#include "/home/Linus/Projects/c/UnixKey/src/substitution/config.h"
+
 class UnixKeyEngine;
+
 namespace fcitx {
 class InputContext;
 }
-
-class UnixKeyEngine;
 
 class UnixKeyState : public fcitx::InputContextProperty {
 public:

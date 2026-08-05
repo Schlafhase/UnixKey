@@ -17,13 +17,12 @@
 #ifndef _UNIXKEY_CONFIG_H
 #define _UNIXKEY_CONFIG_H
 
-#include "fcitx-utils/keysym.h"
-#include "replacement.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-namespace fcitx {class InputContext;}
+#include "fcitx-utils/keysym.h"
+#include "replacement.h"
 
 struct unixKeyConfig {
 public:

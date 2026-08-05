@@ -15,7 +15,10 @@
 // along with this program in LICENSE.txt.
 
 #include "unixkey.h"
-#include <fcitx-utils/key.h>                                         // for Key
+#include "/home/Linus/Projects/c/UnixKey/src/substitution/config.h"
+#include "unixkeystate.h"
+#include <cstdlib>
+#include <fcitx-utils/key.h>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/macros.h>
 #include <fcitx-utils/metastring.h>
@@ -24,15 +27,12 @@
 #include <fcitx/inputcontext.h>
 #include <fcitx/inputcontextmanager.h>
 #include <fcitx/instance.h>
-#include <pwd.h>
-#include <unistd.h>
-#include <cstdlib>
 #include <functional>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
+#include <pwd.h>
 #include <string>
-#include "/home/Linus/Projects/c/UnixKey/src/substitution/config.h"
-#include "unixkeystate.h"
+#include <unistd.h>
 
 UnixKeyEngine::UnixKeyEngine(fcitx::Instance *instance)
     : instance_(instance),
@@ -57,7 +57,10 @@ UnixKeyEngine::UnixKeyEngine(fcitx::Instance *instance)
               this, &ic,
               unixKeyConfig::errorConfig("An error has occured while parsing "
                                          "the UnixKey configuration:\n" +
-                                         error + "\n\nRefer to the README at https://github.com/Schlafhase/UnixKey for configuration help."));
+                                         error +
+                                         "\n\nRefer to the README at "
+                                         "https://github.com/Schlafhase/"
+                                         "UnixKey for configuration help."));
         }
       }) {
   instance->inputContextManager().registerProperty("unixkeyState", &factory_);
