@@ -209,6 +209,7 @@ auto Matcher::updateMatch(std::string const &additionalInput)
     replacementRequest request = buildRequest(
         currentReplacement_->from, newInput, currentReplacement_->to);
     reset();
+    // TODO: add undo value for preserving (by simulating the outcome without the PRESERVE keword)
     if (!preserve) {
       lastReplacement_ = {.match = request.replacement,
                           .replacement = request.match};

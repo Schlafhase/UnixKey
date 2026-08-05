@@ -49,11 +49,13 @@
 #include <unicode/unistr.h>
 #include <unicode/utypes.h>
 #include <unistd.h>
+#include <vector>
 class UnixKeyEngine;
 
 class UnixKeyState : public fcitx::InputContextProperty {
 public:
-  UnixKeyState(UnixKeyEngine *engine, fcitx::InputContext *ic, unixKeyConfig c)
+  UnixKeyState(UnixKeyEngine *engine, fcitx::InputContext *ic,
+               unixKeyConfig const &c)
       : engine_(engine), matcher_(c), config_(c), ic_(ic) {}
 
   void keyEvent(fcitx::KeyEvent &keyEvent);
@@ -66,6 +68,9 @@ private:
   unixKeyConfig config_;
   fcitx::InputContext *ic_;
   std::unique_ptr<fcitx::EventSourceTime> timer_;
+
+  bool replacementPending_ = false;
+  std::vector<fcitx::KeyEvent> eventQueue_;
 
   void apply(const replacementRequest &request);
 };

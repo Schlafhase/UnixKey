@@ -18,7 +18,9 @@
     "trueg": "trüg",
     "Trueg": "Trüg",
     "bluem": "blüm",
-    "Bluem": "Blüm"
+    "Bluem": "Blüm",
+    "bluet": "blüt",
+    "Bluet": "Blüt"
   },
   "case_insensitive": {
     "[email]": "me@example.com",
@@ -29,10 +31,10 @@
     "[fortune]": "UNIXKEY_CMD fortune | cowsay",
     "ss'": "ß",
     "true": "UNIXKEY_PRESERVE",
-    "blue": "UNIXKEY_PRESERVE"
+    "blue": "UNIXKEY_PRESERVE",
     "value": "UNIXKEY_PRESERVE",
     "does": "UNIXKEY_PRESERVE",
-    "que": "UNIXKEY_PRESERVE",
+    "qu": "UNIXKEY_PRESERVE",
     "kongrue": "UNIXKEY_PRESERVE",
     "eventue": "UNIXKEY_PRESERVE",
     "raphael": "UNIXKEY_PRESERVE",
@@ -73,7 +75,7 @@
     "cue": "UNIXKEY_PRESERVE",
     "argue": "UNIXKEY_PRESERVE",
     "influen": "UNIXKEY_PRESERVE",
-    "tongü": "UNIXKEY_PRESERVE",
+    "tongue": "UNIXKEY_PRESERVE",
     "accrue": "UNIXKEY_PRESERVE",
     "diaeresis": "UNIXKEY_PRESERVE",
     "ensue": "UNIXKEY_PRESERVE",

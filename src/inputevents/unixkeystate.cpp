@@ -83,18 +83,31 @@ void UnixKeyState::apply(const replacementRequest &request) {
   for (size_t i = 0; i < length; i++) {
     ic_->forwardKey(fcitx::Key(FcitxKey_BackSpace));
   }
+  replacementPending_ = true;
   timer_ = engine_->instance()->eventLoop().addTimeEvent(
       CLOCK_MONOTONIC, fcitx::now(CLOCK_MONOTONIC) + 5000,
       0, // 5000 microseconds or 5ms
       [this, request](fcitx::EventSourceTime *, unsigned long) -> bool {
         ic_->commitString(request.replacement);
+
+        replacementPending_ = false;
+        // TODO: might break in weird ways when the queue causes another
+        // replacement
+        for (fcitx::KeyEvent &e : eventQueue_) {
+          keyEvent(e);
+        }
+        eventQueue_ = {};
         return false;
       });
 }
 
-// TODO: add logic that queues keypresses when old text is currently being
-// deleted
 void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
+  if (replacementPending_) {
+    eventQueue_.push_back(keyEvent);
+    keyEvent.filterAndAccept();
+    return;
+  }
+
   if (keyEvent.key().sym() == config_.undoKey &&
       keyEvent.origKey().states().test(config_.undoModifier) &&
       !keyEvent.isRelease()) {
