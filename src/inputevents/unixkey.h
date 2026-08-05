@@ -17,44 +17,17 @@
 #ifndef _FCITX5_UNIXKEY_H_
 #define _FCITX5_UNIXKEY_H_
 
-#include "config.h"
-#include "unixkeystate.h"
-#include <Fcitx5/Module/fcitx-module/punctuation/punctuation_public.h>
-#include <Fcitx5/Module/fcitx-module/quickphrase/quickphrase_public.h>
-#include <fcitx-config/configuration.h>
-#include <fcitx-config/iniparser.h>
-#include <fcitx-config/rawconfig.h>
-#include <fcitx-utils/capabilityflags.h>
-#include <fcitx-utils/cutf8.h>
-#include <fcitx-utils/event.h>
-#include <fcitx-utils/eventloopinterface.h>
-#include <fcitx-utils/inputbuffer.h>
-#include <fcitx-utils/key.h>
-#include <fcitx-utils/log.h>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/textformatflags.h>
-#include <fcitx-utils/utf8.h>
-#include <fcitx/addonfactory.h>
-#include <fcitx/addoninstance.h>
-#include <fcitx/addonmanager.h>
-#include <fcitx/candidatelist.h>
-#include <fcitx/event.h>
-#include <fcitx/inputcontext.h>
-#include <fcitx/inputcontextproperty.h>
-#include <fcitx/inputmethodengine.h>
-#include <fcitx/inputmethodentry.h>
-#include <fcitx/inputpanel.h>
-#include <fcitx/instance.h>
-#include <fcitx/statusarea.h>
-#include <fcitx/text.h>
-#include <fcitx/userinterface.h>
-#include <fcitx/userinterfacemanager.h>
-#include <iconv.h>
-#include <string>
-#include <unicode/brkiter.h>
-#include <unicode/unistr.h>
-#include <unicode/utypes.h>
-#include <unistd.h>
+#include "config.h"                     // for UnixKeyConfig
+#include "unixkeystate.h"               // for UnixKeyState
+#include <fcitx-config/iniparser.h>     // for readAsIni, safeSaveAsIni
+#include <fcitx/addonfactory.h>         // for AddonFactory
+#include <fcitx/addonmanager.h>         // for AddonManager
+#include <fcitx/inputcontextproperty.h> // for FactoryFor
+#include <fcitx/inputmethodengine.h>    // for InputMethodEngineV2
+#include <string>                       // for basic_string
+namespace fcitx {
+class Instance;
+}
 
 class UnixKeyEngine : public fcitx::InputMethodEngineV2 {
 public:
@@ -71,8 +44,10 @@ public:
   auto factory() const { return &factory_; }
   auto instance() const { return instance_; }
 
-  const fcitx::Configuration *getConfig() const override { return &config_; };
-  const UnixKeyConfig &getUnixKeyConfig() const { return config_; };
+  auto getConfig() const -> const fcitx::Configuration * override {
+    return &config_;
+  };
+  auto getUnixKeyConfig() const -> const UnixKeyConfig & { return config_; };
   void reloadConfig() override {
     fcitx::readAsIni(config_, "conf/unixkey.conf");
   }
@@ -89,7 +64,8 @@ private:
 };
 
 class UnixKeyEngineFactory : public fcitx::AddonFactory {
-  fcitx::AddonInstance *create(fcitx::AddonManager *manager) override {
+  auto create(fcitx::AddonManager *manager) -> fcitx::AddonInstance * override {
+    // NOLINTNEXTLINE(cppcoreguidelines-owning-memory)
     return new UnixKeyEngine(manager->instance());
   }
 };

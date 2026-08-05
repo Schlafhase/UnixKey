@@ -15,15 +15,16 @@
 // along with this program in LICENSE.txt.
 
 #include "../substitution/matcher.h"
-#include <fcitx-utils/log.h>
 #include <iostream>
 #include <pwd.h>
+#include <cstdlib>
 #include <string>
+#include <unistd.h>
 
-int main() {
+auto main() -> int {
   std::string home;
   char const *const homePtr = getenv("HOME");
-  if (homePtr != NULL) {
+  if (homePtr != nullptr) {
     home = homePtr;
   } else {
     home = getpwuid(getuid())->pw_dir;

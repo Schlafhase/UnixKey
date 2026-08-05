@@ -17,13 +17,17 @@
 #include "config.h"
 #include "replacement.h"
 #include <algorithm>
+#include <cctype>
 #include <fcitx-utils/key.h>
-#include <fcitx-utils/keysym.h>
 #include <fstream>
+#include <initializer_list>
 #include <nlohmann/json.hpp>
 #include <nlohmann/json_fwd.hpp>
 #include <unordered_map>
 #include <vector>
+namespace fcitx {
+enum class KeyState : uint32_t;
+}
 
 template <typename T>
 static auto getJsonValueOrDefault(nlohmann::json const &j,
@@ -31,7 +35,7 @@ static auto getJsonValueOrDefault(nlohmann::json const &j,
     -> T {
   try {
     return j.at(key);
-  } catch (nlohmann::basic_json<>::out_of_range) {
+  } catch (nlohmann::basic_json<>::out_of_range &) {
     return defaultValue;
   }
 }

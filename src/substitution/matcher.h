@@ -19,7 +19,6 @@
 
 #include "config.h"
 #include "replacement.h"
-#include <fcitx-utils/log.h>
 #include <optional>
 #include <string>
 
@@ -36,11 +35,12 @@ public:
   // fields correspondingly. If no match was found it returns an
   // applyReplacement which contains necessary information to apply a
   // substitution. Otherwise NULL is returned.
-  std::optional<replacementRequest> updateMatch(std::string const &additionalInput);
+  auto
+  updateMatch(std::string const &additionalInput) -> std::optional<replacementRequest>;
   // Simulates a backspace (updates the state of the matcher but will never
   // result in a match (at least i think and hope so))
   void backspace();
-  std::optional<replacementRequest> lastReplacement() {
+  auto lastReplacement() -> std::optional<replacementRequest> {
     return lastReplacement_;
   };
 

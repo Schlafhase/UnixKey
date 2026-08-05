@@ -15,39 +15,28 @@
 // along with this program in LICENSE.txt.
 
 #include "unixkeystate.h"
+#include "/home/Linus/Projects/c/UnixKey/src/substitution/matcher.h"
 #include "fcitx-utils/keysym.h"
 #include "unixkey.h"
-#include <Fcitx5/Module/fcitx-module/punctuation/punctuation_public.h>
-#include <Fcitx5/Module/fcitx-module/quickphrase/quickphrase_public.h>
-#include <cstddef>
 #include <ctime>
-#include <fcitx-utils/capabilityflags.h>
-#include <fcitx-utils/cutf8.h>
 #include <fcitx-utils/event.h>
 #include <fcitx-utils/eventloopinterface.h>
 #include <fcitx-utils/key.h>
-#include <fcitx-utils/log.h>
-#include <fcitx-utils/macros.h>
-#include <fcitx-utils/textformatflags.h>
-#include <fcitx-utils/utf8.h>
-#include <fcitx/addoninstance.h>
-#include <fcitx/candidatelist.h>
 #include <fcitx/event.h>
 #include <fcitx/inputcontext.h>
-#include <fcitx/inputmethodentry.h>
 #include <fcitx/inputpanel.h>
 #include <fcitx/instance.h>
-#include <fcitx/statusarea.h>
-#include <fcitx/text.h>
 #include <fcitx/userinterface.h>
-#include <fcitx/userinterfacemanager.h>
-#include <iconv.h>
+#include <initializer_list>
 #include <memory>
 #include <optional>
+#include <cstdint>
+#include <string>
 #include <unicode/brkiter.h>
+#include <unicode/locid.h>
 #include <unicode/unistr.h>
 #include <unicode/utypes.h>
-#include <unistd.h>
+#include <unicode/uversion.h>
 
 void UnixKeyState::updateUI() {
   auto &inputPanel = ic_->inputPanel();

@@ -24,13 +24,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fcitx-utils/log.h>
+#include <fcitx-utils/metastring.h>
 #include <memory>
-#include <nlohmann/json.hpp>
-#include <nlohmann/json_fwd.hpp>
 #include <optional>
 #include <stdexcept>
 #include <string>
-#include <sys/wait.h>
+#include <utility>
 
 namespace {
 struct PipeCloser {
@@ -209,7 +208,8 @@ auto Matcher::updateMatch(std::string const &additionalInput)
     replacementRequest request = buildRequest(
         currentReplacement_->from, newInput, currentReplacement_->to);
     reset();
-    // TODO: add undo value for preserving (by simulating the outcome without the PRESERVE keword)
+    // TODO: add undo value for preserving (by simulating the outcome without
+    // the PRESERVE keword)
     if (!preserve) {
       lastReplacement_ = {.match = request.replacement,
                           .replacement = request.match};

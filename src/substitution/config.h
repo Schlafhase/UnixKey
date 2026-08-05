@@ -23,6 +23,8 @@
 #include <unordered_map>
 #include <vector>
 
+namespace fcitx {class InputContext;}
+
 struct unixKeyConfig {
 public:
   std::vector<replacement> replacements;
