@@ -14,8 +14,8 @@ English-only segments (like "que") so you can still type most English words too.
 Obviously, UnixKey also let's you undo a replacement by pressing a key you can
 configure.
 
-The replacement value can also be specified by a command that runs every time the
-replacement is triggered.
+The replacement value can also be specified by a command that runs every time
+the replacement is triggered.
 
 It is inspired by [Timwis UniKey](https://github.com/Timwi/UniKey) which is a
 similar program for Windows.
@@ -24,6 +24,7 @@ similar program for Windows.
 
 - [Quick Start](#quick-start)
   - [Manual Installation](#manual-installation)
+  - [Using the flake](#using-the-flake)
   - [Uninstalling](#uninstalling)
 - [Usage and configuration](#usage-and-configuration)
   - [Making an own configuration](#making-an-own-configuration)
@@ -87,6 +88,36 @@ UnixKey input method:
 2. Search for "UnixKey" in the "Search Input Method" field.
 3. Double click on UnixKey to move it to your input methods.
 4. (Optional) Move it to the top to make it the default.
+
+### Using the flake
+
+Add this input to your flake:
+
+```nix
+# ...
+inputs = {
+  unixkey = {
+    url = "github:Schlahfase/UnixKey";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+};
+# ...
+```
+
+Add this to your configuration:
+
+```nix
+# ...
+i18n.inputMethod = {
+  type = "fcitx5";
+  enable = true;
+  fcitx5.addons = with pkgs; [
+    kdePackages.fcitx5-qt
+    inputs.unixkey.packages.${pkgs.system}.default
+  ];
+};
+# ...
+```
 
 ### Uninstalling
 
