@@ -15,7 +15,7 @@
 // along with this program in LICENSE.txt.
 
 #include "unixkeystate.h"
-#include "/home/Linus/Projects/c/UnixKey/src/substitution/matcher.h"
+#include "../substitution/matcher.h"
 #include "fcitx-utils/keysym.h"
 #include "unixkey.h"
 #include <cstdint>

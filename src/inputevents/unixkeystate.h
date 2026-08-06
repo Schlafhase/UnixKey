@@ -24,7 +24,7 @@
 #include <vector>
 
 #include "../substitution/matcher.h"
-#include "/home/Linus/Projects/c/UnixKey/src/substitution/config.h"
+#include "../substitution/config.h"
 
 class UnixKeyEngine;
 

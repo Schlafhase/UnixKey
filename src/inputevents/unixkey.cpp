@@ -15,7 +15,7 @@
 // along with this program in LICENSE.txt.
 
 #include "unixkey.h"
-#include "/home/Linus/Projects/c/UnixKey/src/substitution/config.h"
+#include "../substitution/config.h"
 #include "unixkeystate.h"
 #include <cstdlib>
 #include <fcitx-utils/key.h>
