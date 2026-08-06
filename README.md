@@ -4,7 +4,6 @@
 
 https://github.com/user-attachments/assets/e0232d85-1caf-48e4-b53f-6e38c8b5ae74
 
-
 UnixKey is an fcitx5 input method that aims to make inputting arbitrary Unicode
 characters using an English keyboard layout easier. This is especially useful if
 English is not your native language. Take German for example: German words often
@@ -14,6 +13,9 @@ corresponding German letters. With a few more rules, you can even exclude common
 English-only segments (like "que") so you can still type most English words too.
 Obviously, UnixKey also let's you undo a replacement by pressing a key you can
 configure.
+
+The replacement value can also be specified by a command that runs every time the
+replacement is triggered.
 
 It is inspired by [Timwis UniKey](https://github.com/Timwi/UniKey) which is a
 similar program for Windows.
