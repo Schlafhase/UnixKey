@@ -18,6 +18,7 @@
 #include "/home/Linus/Projects/c/UnixKey/src/substitution/matcher.h"
 #include "fcitx-utils/keysym.h"
 #include "unixkey.h"
+#include <cstdint>
 #include <ctime>
 #include <fcitx-utils/event.h>
 #include <fcitx-utils/eventloopinterface.h>
@@ -30,7 +31,6 @@
 #include <initializer_list>
 #include <memory>
 #include <optional>
-#include <cstdint>
 #include <string>
 #include <unicode/brkiter.h>
 #include <unicode/locid.h>
@@ -97,6 +97,7 @@ void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
     return;
   }
 
+  // undo key
   if (keyEvent.key().sym() == config_.undoKey &&
       keyEvent.origKey().states().test(config_.undoModifier) &&
       !keyEvent.isRelease()) {
@@ -112,18 +113,24 @@ void UnixKeyState::keyEvent(fcitx::KeyEvent &keyEvent) {
 
   ic_->forwardKey(keyEvent.key());
 
-  if (keyEvent.isRelease() || (keyEvent.key().states() != 0U)) {
+  // keys that do nothing
+  if (keyEvent.isRelease() 
+    || (keyEvent.key().states() != 0U) 
+    || keyEvent.key().isModifier() 
+    || keyEvent.key().check(FcitxKey_Escape)) {
     keyEvent.filterAndAccept();
     return;
   }
+
+  // backspace
   if (keyEvent.key().check(FcitxKey_BackSpace)) {
     matcher_.backspace();
     keyEvent.filterAndAccept();
     return;
   }
 
-  // just reset matcher on these ones (i might add handling for them later but
-  // that's not a priority)
+  // keys that change the input buffer and i'm to lazy to handle them properly
+  // (just reset everything)
   if (keyEvent.key().check(FcitxKey_Return) ||
       keyEvent.key().check(FcitxKey_Left) ||
       keyEvent.key().check(FcitxKey_Right) ||

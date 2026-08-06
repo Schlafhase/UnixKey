@@ -281,3 +281,17 @@ block the entire fcitx5 process so avoid running commands that take long because
 you will be unable to type anything for the duration of the command.
 
 ## How it works
+
+UnixKey is an addon for fcitx5 (an input method provider). It works by
+intercepting every key event and checking if a matching replacement can be
+found.
+
+The way it matches against the replacements is like this:
+
+On the first key event it checks if any replacement (starting from the longest) starts with the character
+the key would produce. If it does, keep that in mind as the "currently matching
+replacement" otherwise treat the next key event as a "first" key event again.
+
+Following key events check if they match the expected value for the currently
+matching replacement. If yes, great now check if the replacement has been completed in which
+case it can be applied. Otherwise try if a shorter replacement would match and continue with that.

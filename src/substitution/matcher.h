@@ -58,7 +58,7 @@ private:
   unixKeyConfig config_;
   std::string currentMatch_;
   std::optional<replacement> currentReplacement_ = std::nullopt;
-  bool getLongestSubstitution(std::string const &string);
+  auto getLongestSubstitution(std::string const &string) -> bool;
   std::optional<replacementRequest> lastReplacement_;
   int insertionsSinceLastReplacement = 0;
 };

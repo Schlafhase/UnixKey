@@ -16,13 +16,15 @@
 
 #include "matcher.h"
 
-#include <fcitx-utils/log.h>
-#include <fcitx-utils/metastring.h>
 #include <algorithm>
 #include <array>
+#include <bits/stdc++.h>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <fcitx-utils/inputbuffer.h>
+#include <fcitx-utils/log.h>
+#include <fcitx-utils/metastring.h>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -106,24 +108,42 @@ Matcher::Matcher(unixKeyConfig c) : config_(std::move(c)) {}
 Matcher::Matcher(std::string const &replacementFile)
     : config_(replacementFile) {}
 
+static auto simulateMatch(Matcher &m, std::string &input) -> std::string {
+  fcitx::InputBuffer b = {};
+  for (char c : input) {
+    b.type(c);
+    std::optional<replacementRequest> r = m.updateMatch(std::string(1, c));
+    if (r.has_value()) {
+
+      size_t const length = r->match.size();
+      for (size_t i = 0; i < length; i++) {
+        b.backspace();
+      }
+      b.type(r->replacement);
+    }
+  }
+  return b.userInput();
+}
+
 auto Matcher::updateMatch(std::string const &additionalInput)
     -> std::optional<replacementRequest> {
+  if (additionalInput == "") {
+    DEBUG_LOG("skipping because additional input is empty");
+    return std::nullopt;
+  }
+
   DEBUG_LOG("additionalInput: " + additionalInput);
 
-  if (!additionalInput.empty()) {
-
-    if (lastReplacement_.has_value()) {
-      if (insertionsSinceLastReplacement >= config_.undoReset) {
-        DEBUG_LOG(
-            "exceeded undo reset config value, resetting lastreplacement");
-        resetLastReplacement();
-      } else {
-        DEBUG_LOG("appending additional input to last replacement");
-        lastReplacement_->match += additionalInput;
-        lastReplacement_->replacement += additionalInput;
-        insertionsSinceLastReplacement++;
-        DEBUG_LOG("last replacement match: " + lastReplacement_->match);
-      }
+  if (lastReplacement_.has_value()) {
+    if (insertionsSinceLastReplacement >= config_.undoReset) {
+      DEBUG_LOG("exceeded undo reset config value, resetting lastreplacement");
+      resetLastReplacement();
+    } else {
+      DEBUG_LOG("appending additional input to last replacement");
+      lastReplacement_->match += additionalInput;
+      lastReplacement_->replacement += additionalInput;
+      insertionsSinceLastReplacement++;
+      DEBUG_LOG("last replacement match: " + lastReplacement_->match);
     }
   }
 
@@ -209,7 +229,6 @@ auto Matcher::updateMatch(std::string const &additionalInput)
     bool const preserve = currentReplacement_->to == "UNIXKEY_PRESERVE";
     replacementRequest request = buildRequest(
         currentReplacement_->from, newInput, currentReplacement_->to);
-    reset();
     // TODO: add undo value for preserving (by simulating the outcome without
     // the PRESERVE keword)
     if (!preserve) {
@@ -217,14 +236,35 @@ auto Matcher::updateMatch(std::string const &additionalInput)
                           .replacement = request.match};
       DEBUG_LOG("set last replacement: " + lastReplacement_->match + "->" +
                 lastReplacement_->replacement);
+    } else {
+      // UNIXKEY_PRESERVE is set so simulate the outcome if it hadn't been
+      // specified as the last replacement
+      unixKeyConfig simulationConfig = unixKeyConfig();
+      simulationConfig.undoKey = config_.undoKey;
+      simulationConfig.undoReset = config_.undoReset;
+      simulationConfig.undoModifier = config_.undoModifier;
+
+      for (size_t i = config_.replacements.size(); i > 0; i--) {
+        replacement r = config_.replacements[i - 1];
+        if (r.from != currentReplacement_->from) {
+          simulationConfig.replacements.push_back(std::move(r));
+        }
+      }
+
+      Matcher simulationMatcher(std::move(simulationConfig));
+      std::string simulatedOutcome =
+          simulateMatch(simulationMatcher, currentMatch_);
+      lastReplacement_ = {.match = currentMatch_,
+                          .replacement = simulatedOutcome};
     }
+    reset();
     return request;
   }
   return std::nullopt;
 }
 
 void Matcher::backspace() {
-  // TODO: this is bytes not unicode, should work in most cases but not all;
+  // NOTE: this is bytes not unicode, should work in most cases but not all;
   // might be worth implementing unicode
   if (!currentMatch_.empty()) {
     currentMatch_.pop_back();
