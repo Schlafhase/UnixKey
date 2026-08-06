@@ -1,5 +1,7 @@
 # UnixKey
 
+![time spent](https://hackatime.hackclub.com/api/v1/badge/U081Z7D7YJK/Schlafhase/UnixKey)
+
 UnixKey is an fcitx5 input method that aims to make inputting arbitrary Unicode
 characters using an English keyboard layout easier. This is especially useful if
 English is not your native language. Take German for example: German words often
@@ -13,7 +15,24 @@ configure.
 It is inspired by [Timwis UniKey](https://github.com/Timwi/UniKey) which is a
 similar program for Windows.
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+  - [Manual Installation](#manual-installation)
+  - [Uninstalling](#uninstalling)
+- [Usage and configuration](#usage-and-configuration)
+  - [Making an own configuration](#making-an-own-configuration)
+  - [Advanced configuration](#advanced-configuration)
+- [How it works](#how-it-works)
+- [Setup for developers](#setup-for-developers)
+
 ## Quick Start
+
+**Dependencies**: fcitx5, cmake, ninja or make, libicu, C++ compiler
+
+Before installing UnixKey, install the dependencies above. Check your distros
+package repository to find them. (Most Linux distros should ship a C++ compiler
+so you likely won't need to install that)
 
 > [!WARNING]
 >
@@ -29,8 +48,6 @@ to do.
 You can also install UnixKey manually for more control.
 
 ### Manual Installation
-
-**Dependencies**: fcitx5, cmake, ninja or make, libicu, C++ compiler
 
 Start by installing UnixKey:
 
@@ -288,10 +305,35 @@ found.
 
 The way it matches against the replacements is like this:
 
-On the first key event it checks if any replacement (starting from the longest) starts with the character
-the key would produce. If it does, keep that in mind as the "currently matching
-replacement" otherwise treat the next key event as a "first" key event again.
+On the first key event it checks if any replacement (starting from the longest)
+starts with the character the key would produce. If it does, keep that in mind
+as the "currently matching replacement" otherwise treat the next key event as a
+"first" key event again.
 
 Following key events check if they match the expected value for the currently
-matching replacement. If yes, great now check if the replacement has been completed in which
-case it can be applied. Otherwise try if a shorter replacement would match and continue with that.
+matching replacement. If yes, great now check if the replacement has been
+completed in which case it can be applied. Otherwise try if a shorter
+replacement would match and continue with that.
+
+## Setup for developers
+
+First, install the dependencies (see Quick Start) and clone the repository. Then
+generate the build files like this:
+
+```sh
+cmake -S . -B build/debug -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_EXPORT_COMPILE_COMMANDS=ON =DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build/release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release
+```
+
+Use these commands to build and install debug/release:
+
+```sh
+cmake --build build/debug; sudo cmake --install build/debug
+cmake --build build/release; sudo cmake --install build/release
+```
+
+You can use this command to clean up includes:
+
+```sh
+cmake --build build/debug --target fix-includes
+```

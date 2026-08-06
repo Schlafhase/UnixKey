@@ -16,20 +16,20 @@
 
 #include "matcher.h"
 
-#include <algorithm>
-#include <array>
-#include <bits/stdc++.h>
-#include <cctype>
-#include <cstdio>
-#include <cstdlib>
 #include <fcitx-utils/inputbuffer.h>
 #include <fcitx-utils/log.h>
 #include <fcitx-utils/metastring.h>
+#include <algorithm>
+#include <array>
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "config.h"
 #include "logger.h"
