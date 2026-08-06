@@ -1,3 +1,4 @@
+echo "This installer will install UnixKey but not the dependencies because how you install them varies depending on your Linux distro"
 read -p "This installer will install files that are part of an fcitx5 addon into /usr/share/fcitx5/, /usr/lib/fcitx5/ and ~/.config/unixkey.json. Continue? [y/n]: " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
