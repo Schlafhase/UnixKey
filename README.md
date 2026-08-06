@@ -1,5 +1,9 @@
 # UnixKey
 
+
+https://github.com/user-attachments/assets/e0232d85-1caf-48e4-b53f-6e38c8b5ae74
+
+
 UnixKey is an fcitx5 input method that aims to make inputting arbitrary Unicode
 characters using an English keyboard layout easier. This is especially useful if
 English is not your native language. Take German for example: German words often
