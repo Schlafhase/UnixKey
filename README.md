@@ -30,6 +30,7 @@ similar program for Windows.
   - [Making an own configuration](#making-an-own-configuration)
   - [Advanced configuration](#advanced-configuration)
 - [How it works](#how-it-works)
+- [Problems with Neovim](#problems-with-neovim)
 - [Setup for developers](#setup-for-developers)
 
 ## Quick Start
@@ -350,6 +351,70 @@ Following key events check if they match the expected value for the currently
 matching replacement. If yes, great now check if the replacement has been
 completed in which case it can be applied. Otherwise try if a shorter
 replacement would match and continue with that.
+
+## Problems with Neovim
+
+I use neovim and I noticed that it doesn't always work well with UnixKey. In
+Normal mode, pressing "o" and then "e" usually means "Insert new line and type
+an 'e'". With UnixKey (my configuration), this inserts a new line, removes it
+again and types an "ö".
+
+**The solution:** I wrote a simple lua config that changes the input method
+based on the mode you're in. In insert, command and terminal mode, it uses
+UnixKey and in other modes, a "normal" input method is used ('keyboard-gb' in my
+case):
+
+```lua
+local normalIM = "keyboard-gb"
+local insertIM = "unixkey"
+changeIM = function(name)
+	local success = pcall(vim.fn.system, "fcitx5-remote -s " .. name)
+	if not success then
+		vim.notify("Failed to set fcitx5 input method. Is fcitx5-remote installed?")
+	end
+end
+useCorrectIM = function()
+	local mode = vim.api.nvim_get_mode().mode
+	if mode == "i" or mode == "c" or mode == "t" then
+		M.changeIM(insertIM)
+	else
+		M.changeIM(normalIM)
+	end
+end
+
+local imUpdateGroup = vim.api.nvim_create_augroup("update-im", { clear = true })
+
+vim.api.nvim_create_autocmd("FocusLost", {
+	group = imUpdateGroup,
+	callback = function()
+		changeIM("unixkey")
+	end,
+})
+
+vim.api.nvim_create_autocmd("QuitPre", {
+	group = imUpdateGroup,
+	callback = function()
+		changeIM("unixkey")
+	end,
+})
+
+vim.api.nvim_create_autocmd("FocusGained", {
+	group = imUpdateGroup,
+	callback = useCorrectIM,
+})
+
+vim.api.nvim_create_autocmd("ModeChanged", {
+	group = imUpdateGroup,
+	callback = useCorrectIM,
+})
+```
+
+You can integrate this into your neovim configuration however you'd like. The
+above code is not the way I integrated it and I wouldn't recommend doing it that
+way. You can check
+[my configuration](https://github.com/Schlafhase/neovim/blob/9db461405b6303c4882459f282bcb0d2df3a399a/lua/config/autocmds.lua#L62)
+if you need help. Of course, you can also
+[contact me](https://schlafhase.uk#contact).
 
 ## Setup for developers
 
