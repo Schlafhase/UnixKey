@@ -412,7 +412,7 @@ vim.api.nvim_create_autocmd("ModeChanged", {
 You can integrate this into your neovim configuration however you'd like. The
 above code is not the way I integrated it and I wouldn't recommend doing it that
 way. You can check
-[my configuration](https://github.com/Schlafhase/neovim/blob/9db461405b6303c4882459f282bcb0d2df3a399a/lua/config/autocmds.lua#L62)
+[my configuration](https://github.com/Schlafhase/neovim/blob/9af1e0a0e3e04e1ea701e3d0a4b3b4abd5adb9ab/lua/config/autocmds.lua#L62)
 if you need help. Of course, you can also
 [contact me](https://schlafhase.uk#contact).
 
